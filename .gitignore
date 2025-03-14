@@ -1,7 +1,6 @@
 .venv
 __pycache__
 pq_composite_v1
-certs
 ca
 *.pem
 *.key

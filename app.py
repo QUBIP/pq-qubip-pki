@@ -121,7 +121,7 @@ def download_certificate(ca, cert_id):
     filename = f'{cert_id}-cert.pem'
     chain_filename = f'{cert_id}-chain.pem'
     logging.debug("app.py - Received request to download certificate: %s", cert_id)
-    certs_path = os.path.join(os.getcwd(), "certs", ca, "newcerts")
+    certs_path = os.path.join(os.getcwd(), "certs", ca, "newcerts") 
     if os.path.exists(certs_path):
         logging.debug("app.py - Certs path: %s", certs_path)
     else:

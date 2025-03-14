@@ -18,7 +18,7 @@ env = os.environ.copy()
 def retrieve_ca_info(ca, cert_id):
     logging.debug(f"pkiCrypto.py - Retrieving CA information for {ca}")
     if ca == 'qubip-tls-ca':
-        ca_dir = directories.TLS_CA_DIR
+        ca_dir = directories.TLS_CA_DIR 
     elif ca == 'qubip-software-ca':
         ca_dir = directories.SOFTWARE_CA_DIR
     certs_dir = os.path.join(ca_dir, 'newcerts')

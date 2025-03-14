@@ -17,7 +17,7 @@ This document defines the policies and procedures for the issuance, management, 
 - **Validity Period**: 10 years.
 - **Key Algorithm**: ED25519/MLDSA-44 or ED25519/MLDSA-65.
 - **Revocation**: Revoked if the private key is compromised or no longer needed.
-
+ 
 ## 3. End-Entity Certificate Policy
 | **Category**       | **Policy**                                         |
 |--------------------|---------------------------------------------------|
