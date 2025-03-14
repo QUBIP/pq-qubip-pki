@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Certificate</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        h2 {
+            color: #007BFF;
+            border-bottom: 2px solid #007BFF;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #certificate-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        #certificate-actions button {
+            width: auto;
+            padding: 10px 15px;
+        }
+
+        #certificate-content {
+            margin-top: 20px;
+            background: #eee;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .nav {
+            background: #007BFF;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 18px;
+        }
+
+        .nav a:hover {
+            text-decoration: underline;
+        }
+
+        .cn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            /* Space between rows */
+        }
+
+        .cn-option {
+            display: flex;
+            align-items: center;
+            /* Align checkbox, label, and input */
+            gap: 10px;
+            /* Space between elements */
+            padding: 5px;
+        }
+
+        .cn-option input[type="checkbox"] {
+            width: 15px;
+            /* Set fixed width for checkbox */
+            height: 15px;
+            margin-right: 5px;
+        }
+
+        .cn-option label {
+            font-size: 16px;
+            font-weight: bold;
+            min-width: 90px;
+            /* Ensures consistent spacing */
+        }
+
+        .cn-option input[type="text"] {
+            flex-grow: 1;
+            /* Makes input field take available space */
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+            /* Hidden by default */
+        }
+        .error-message {
+        color: red;
+        font-size: 12px;
+        margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Generate {{ purpose }} certificate</h2>
+        <form id="certForm" method="POST"
+            action="{{ url_for('generate_certificate', purpose=request.args.get('purpose', purpose)) }}"
+            data-purpose="{{ request.args.get('purpose', purpose) }}">
+            <!-- Key Algorithm Dropdown -->
+            <label for="key_algorithm">Key Algorithm</label>
+            <select id="key_algorithm" name="key_algorithm">
+                <option value="rsa2048">RSA 2048</option>
+                <option value="rsa4096">RSA 4096</option>
+                <option value="ed25519">ED25519</option>
+                <option value="mldsa44">MLDSA 44</option>
+                <option value="mldsa65">MLDSA 65</option>
+                <option value="mldsa87">MLDSA 87</option>
+            </select>
+            <!-- Subject Information (Hidden for Code Signing) -->
+            {% if purpose != "code-signing" %}
+            <label for="commonName">Common Name</label>
+            {% if purpose == "tls-client" %}
+            <p>The Common Name (CN) serves as the primary identifier for the certificate holder. In client certificates it contains the IP address or the individual name.</p>
+            <div class="cn-container">
+                <input type="text" id="clientIpInput" name="ip" placeholder="Enter IP Address (e.g., 192.168.1.1)">
+                <span class="error-message" id="clientIpError"></span>
+            </div>
+            {% endif %}
+            {% if purpose == "tls-server" %}
+            <p>The Common Name (CN) serves as the primary identifier for the certificate holder. In server certificates, it can be either a Fully Qualified Domain Name (FQDN) or an IP address. Choose if you want to use a FQDN <strong>or</strong> an IP address as
+                DN for your certificate</p>
+            <div class="cn-container">
+                <!-- FQDN -->
+                <div class="cn-option">
+                    <label for="fqdnCheckbox">FQDN</label>
+                    <input type="checkbox" id="fqdnCheckbox" name="cn_type" value="fqdn">
+                    <input type="text" id="fqdnInput" name="fqdn" placeholder="Enter FQDN (e.g., example.com)"
+                        style="display: none;">
+                    <span class="error-message" id="fqdnError"></span>
+
+                </div>
+                <!-- IP Address Checkbox & Input -->
+                <div class="cn-option">
+                    <label for="ipCheckbox">IP Address</label>
+                    <input type="checkbox" id="ipCheckbox" name="cn_type" value="ip">
+                    <input type="text" id="ipInput" name="ip" placeholder="Enter IP Address (e.g., 192.168.1.1)"
+                        style="display: none;">
+                    <span class="error-message" id="ipError"></span>
+
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+            <button id="submitButton" type="submit">Generate Private Key and Certificate</button>
+        </form>
+
+        <div id="certificate-actions" style="display: none;">
+            <a href="#" class="button" id="download-cert-btn">Download Key,  Certificate and chain</a>
+            <!-- <a href="#" class="button" id="view-cert-btn" data-ca="{{ ca }}" data-cert="{{ certificate }}" data-cert-filename="{{ filename }}">View Certificate</a> -->
+        </div>
+
+        <div id="certificate-content">
+            <pre id="certText"></pre>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='certificate_generation.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,2 @@
+TLS_PASSWORD="browser"
+SOFTWARE_CA_PASSWORD="software"
