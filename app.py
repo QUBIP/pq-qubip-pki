@@ -234,20 +234,55 @@ def view_ca_certificate(ca):
     if not os.path.exists(full_path):
         logging.error("Certificate not found: %s", filename)
         return jsonify({'error': 'Certificate not found'}), 404
+    else:
+        logging.debug("Certificate found: %s", filename)
 
     # Read and return the certificate content
     try:
-        cert_data = pkiCrypto.get_certificate_details(cert_id, full_path, chain_path)
-        ca_crl = f'{ca}.crl'
-        logging.debug("app.py - CA CRL: %s", ca_crl)
-        logging.debug("app.py - Certificate details: %s", cert_data)
-        return render_template('certificate_details.html', 
+        cert_data = pkiCrypto.get_ca_certificate_details(full_path)
+        return render_template('view_ca_certificate.html', 
                                cert_data=cert_data,
-                               ca=ca,
-                               ca_crl=ca_crl)
+                               ca=ca)
     except Exception as e:
         logging.error(f"Error reading certificate: {e}")
         return jsonify({'error': 'Error reading certificate'}), 500
+
+@app.route('/crl_details/<ca>/ca_crl', methods=['GET'])
+def view_ca_crl(ca):
+    logging.debug(ca)
+    cert_id = ca
+    filename = f'{ca}.crl'
+    certs_path = os.path.join(os.getcwd(), "certs", ca, "crl")  
+    full_path = os.path.join(certs_path, filename)  
+    logging.debug("app.py - CRL path: %s", full_path)
+
+    # Check if the CRL file exists
+    if not os.path.exists(full_path):
+        logging.error("CRL not found: %s", filename)
+        return jsonify({'error': 'CRL not found'}), 404
+    else:
+        logging.debug("CRL found: %s", filename)
+
+    # Read and return the CRL content
+    try:
+        with open(full_path, 'r') as crl_file:
+            crl_data = crl_file.read()
+        crl_file.close()
+        crl_data = pkiCrypto.get_crl_details(full_path)
+        return render_template('view_ca_crl.html', crl_data=crl_data, ca=ca)
+    except Exception as e:
+        logging.error(f"Error reading CRL: {e}")
+        return jsonify({'error': 'Error reading CRL'}), 500
+    # Read and return the CRL content
+    # try:
+    #     ca_crl = f'{ca}.crl'
+    #     logging.debug("app.py - CA CRL: %s", ca_crl)
+    #     logging.debug("app.py - CRL details: %s", crl_data)
+    #     return render_template('view_ca_crl.html',
+    #                            ca=ca)
+    # except Exception as e:
+    #     logging.error(f"Error reading CRL: {e}")
+    #     return jsonify({'error': 'Error reading CRL'}), 500
 
 @app.route('/certificate_details/<ca>/<cert_id>', methods=['GET'])
 def view_certificate(ca, cert_id):

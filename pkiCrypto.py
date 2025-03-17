@@ -224,6 +224,16 @@ def get_certificate_details(cert_id, cert_path, chain_path):
 
     return cert_info
 
+def get_ca_certificate_details(ca_cert_path):
+    cert_command = f"openssl x509 -in {ca_cert_path} -noout -text"
+    ca_cert_data = ""
+    ca_cert_data = subprocess.check_output(cert_command, shell=True, text=True).strip()
+    return ca_cert_data
+def get_crl_details(crl_path):
+    crl_command = f"openssl crl -in {crl_path} -noout -text"
+    crl_data = ""
+    crl_data = subprocess.check_output(crl_command, shell=True, text=True).strip()
+    return crl_data
 def extract_pq_key_material(cert):
     text = str(cert)
     print(text)
