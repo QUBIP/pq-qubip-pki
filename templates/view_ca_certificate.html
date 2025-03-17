@@ -2,25 +2,103 @@
 <html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificate Details</title>
     <style>
+        /* General Reset */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            line-height: 1.6;
+        }
 
+        /* Container for centering content */
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Back link styling */
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #007BFF;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Heading styles */
+        h1 {
+            font-size: 28px;
+            color: #007BFF;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #007BFF;
+            padding-bottom: 10px;
+        }
+
+        /* Certificate data display */
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            white-space: pre-wrap; /* Preserve formatting but wrap text */
+            word-wrap: break-word;
+            overflow-x: auto;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            pre {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <a href="/">Back to Home</a>
     <div class="container">
-        <h1>Certificate Details</h1>
-        <h2>{{ ca }}
-        </h2>
+        <a href="/" class="back-link">Back to Home</a>
+        <h1>CA Certificate Details</h1>
+        <h2>{{ ca }}</h2>
         <pre>{{ cert_data }}</pre>
-        <br>
-
-        <!-- <script src="/static/certificate_details.js"></script> -->
-        <script src="/static/script.js"></script>
     </div>
 
+    <!-- Optional: Add JavaScript if needed -->
+    <script src="/static/script.js"></script>
 </body>
 
 </html>
