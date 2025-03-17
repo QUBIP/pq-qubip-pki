@@ -6,3 +6,5 @@ ca
 *.key
 *.csr
 react_app
+.env.dev
+.env.prod

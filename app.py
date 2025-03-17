@@ -11,15 +11,14 @@ from security import directories
 from cryptography import x509
 import base64
 from cryptography.hazmat.backends import default_backend
+from config import Config
+
+
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
 
+# Initialize flask app
 app = Flask(__name__, static_url_path='/static')
-# Algorithms 
-private_keys = {}
-classical_algorithms = ['rsa2048', 'rsa4096', 'ed25519', 'ecdsa']
-pq_algorithms = ['mldsa44', 'mldsa65', 'mldsa87', 'mldsa65_ed25519', 'sphincsshake256fsimple']
-certificate_authorities = ['tls-ca', 'software-ca']
 
 os.makedirs(directories.CERTS_DIR, exist_ok=True)
 
