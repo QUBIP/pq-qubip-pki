@@ -142,13 +142,11 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("submitButton").addEventListener("click", function (event) {
         event.preventDefault();
         if (purpose == "code-signing") {
-            // console.log('Form submitted');
             const data = {
                 algorithm: document.getElementById('key_algorithm').value,
                 commonName: "",
                 cn_type: ""
             };
-            // console.log(data);
 
             // Hide the "Generate Certificate" button once it's clicked
             const generateButton = document.querySelector('button[type="submit"]');
@@ -168,19 +166,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     console.log('Certificate generation response: ', data);
                     const ca = data.ca;
                     const cert_id = data.certificate_id;
-                    // show buttons
                     certActions.style.display = "flex";
-
-                    // // Show the certificate content (if available)
-                    // if (data.certificate) {
-                    //     certContent.style.display = "block";
-                    //     certText.textContent = data.certificate;
-                    // }
-
-                    // Show success message
                     successMessage.style.display = "block";
-
-                    // Show buttons
                     certActions.style.display = "flex";
 
                     // Set up download button
@@ -275,12 +262,12 @@ document.addEventListener("DOMContentLoaded", function () {
                             alert("The private key has been deleted for security reasons. Please generate another certificate if you need it.");
                             return; // Prevent further execution
                         }
-                    
+
                         // Show a confirmation popup before downloading
                         const userConfirmed = confirm("Warning: This certificate and private key can only be downloaded ONCE. After that, the private key will be deleted from the server. Do you want to proceed?");
-                        
+
                         if (!userConfirmed) return; // Stop if the user cancels
-                    
+
                         fetch(`/download_certificate/${data.ca}/${data.certificate_id}`, { method: 'GET' })
                             .then(response => {
                                 if (!response.ok) throw new Error('Failed to download certificate');
@@ -299,23 +286,23 @@ document.addEventListener("DOMContentLoaded", function () {
                                 alert("Error: Failed to download certificate. It may have already been deleted.");
                             });
                     }); // end event download
-                    
+
                 })
                 .catch(error => {
                     console.error("Error generating the certificate: ", error);
                 });
-                
-            } // end not code signing
-            const viewBtn = document.getElementById("view-cert-btn");
-            const ca = this.getAttribute("data-ca");
-            const certificate = this.getAttribute("data-cert");
-            const filename = this.getAttribute("data-cert-filename");
-            viewBtn.addEventListener("click", function () {
-                console.log('Viewing certificate');
-                console.log(ca);
-                console.log(certificate);
-                console.log(filename);
-            });
+
+        } // end not code signing
+        const viewBtn = document.getElementById("view-cert-btn");
+        const ca = this.getAttribute("data-ca");
+        const certificate = this.getAttribute("data-cert");
+        const filename = this.getAttribute("data-cert-filename");
+        viewBtn.addEventListener("click", function () {
+            console.log('Viewing certificate');
+            console.log(ca);
+            console.log(certificate);
+            console.log(filename);
+        });
     });
 
 
