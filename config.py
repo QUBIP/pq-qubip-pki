@@ -56,6 +56,8 @@ class Config:
     ROOT_CA_CERT = os.getenv("ROOT_CA_CERT")
     TLS_CA_CERT = os.getenv("TLS_CA_CERT")
     SOFTWARE_CA_CERT = os.getenv("SOFTWARE_CA_CERT")
+    TLS_CA_CHAIN= os.getenv("TLS_CA_CHAIN")
+    SOFTWARE_CA_CHAIN= os.getenv("SOFTWARE_CA_CHAIN")
 
 # Validate required variables
     @classmethod
@@ -71,7 +73,8 @@ class Config:
             "TLS_CLIENT_CONF", "CODESIGN_CONF",
             "TLS_CA_KEY", "SOFTWARE_CA_KEY",
             "TLS_CA_PASSWORD", "SOFTWARE_CA_PASSWORD",
-            "ROOT_CA_CERT", "TLS_CA_CERT", "SOFTWARE_CA_CERT"
+            "ROOT_CA_CERT", "TLS_CA_CERT", "SOFTWARE_CA_CERT", "TLS_CA_CHAIN", "SOFTWARE_CA_CHAIN"
+
         ]
         for var in required_vars:
             if not getattr(cls, var):
