@@ -122,11 +122,8 @@ document.addEventListener("DOMContentLoaded", function () {
         else {
             //client
             if (!ipPattern.test(clientInput.value.trim())) {
-                clientIpError.textContent = "Invalid IP address format.";
-                isValid = false;
-            } else {
                 clientIpError.textContent = "";
-                cnType = "ip";
+                cnType = "fqdn";
                 commonName = clientInput.value.trim();
             }
         }
@@ -232,9 +229,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             })
-                .then(response => {
-                    console.log(response.json())
-                })
+                .then(response => response.json())
                 .then(data => {
                     //console.log(data)
 

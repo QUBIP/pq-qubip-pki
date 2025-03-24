@@ -67,6 +67,7 @@ openssl ca -selfsign \
     -passin file:$PASS_FILE \
     -extensions $EXTENSIONS \
     -days 7305 \
+    -md sha256 \
     -batch
 
 # Check if the certificate was created successfully

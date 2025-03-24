@@ -11,7 +11,7 @@ from cryptography import x509
 import base64
 from cryptography.hazmat.backends import default_backend
 from config import Config
-
+import ssl
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -227,16 +227,18 @@ def view_ca_crl(ca):
     except Exception as e:
         return jsonify({'error': 'Error reading CRL'}), 500
 
+APP_CERT = app.config['APP_CERT']
+APP_KEY = app.config['APP_KEY']
+APP_CA_CERT = app.config['APP_CA_CERT']
+CHAIN = app.config['APP_CHAIN']
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ssl_context.load_cert_chain(certfile=CHAIN, keyfile=APP_KEY, password=None)
 # Home page
 @app.route('/')
 def home():
+    # home_url = url_for('home')
+    # logging.info("app.py - HOME URL: ", home_url)
     return render_template('home.html')  # Render the new home page template
-
 if __name__ == '__main__':
-    logging.info("app.py - Starting Flask application...")
-
-    with app.app_context():
-        home_url = url_for('pki.all.qubip.eu')
-        logging.info("app.py - HOME URL: ", home_url)
-        
-    app.run(debug=True)
+    logging.info("app.py - Starting Flask application with HTTPS...")
+    app.run(debug=True, host='127.0.0.1', port=5000, ssl_context=ssl_context)

@@ -17,6 +17,15 @@ class Config:
     TLS_CA = os.getenv("TLS_CA")
     SOFTWARE_CA = os.getenv("SOFTWARE_CA")
 
+    # variables for flask HTTPS
+    APP_CERT = os.getenv("APP_CERT")
+    APP_CA_CERT = os.getenv("APP_CA_CERT")
+    APP_ROOT_CA_CERT = os.getenv("APP_ROOT_CA_CERT")
+    APP_KEY = os.getenv("APP_KEY")
+    APP_CA_KEY = os.getenv("APP_CA_KEY")
+    APP_ROOT_CA_KEY = os.getenv("APP_ROOT_CA_KEY")
+    APP_CHAIN = os.getenv("APP_CHAIN")
+
     # cert purposes
     TLS_SERVER = os.getenv("TLS_SERVER")
     TLS_CLIENT = os.getenv("TLS_CLIENT")
@@ -73,7 +82,7 @@ class Config:
             "TLS_CLIENT_CONF", "CODESIGN_CONF",
             "TLS_CA_KEY", "SOFTWARE_CA_KEY",
             "TLS_CA_PASSWORD", "SOFTWARE_CA_PASSWORD",
-            "ROOT_CA_CERT", "TLS_CA_CERT", "SOFTWARE_CA_CERT", "TLS_CA_CHAIN", "SOFTWARE_CA_CHAIN"
+            "ROOT_CA_CERT", "TLS_CA_CERT", "SOFTWARE_CA_CERT", "TLS_CA_CHAIN", "SOFTWARE_CA_CHAIN", "APP_CERT", "APP_CA_CERT", "APP_ROOT_CA_CERT", "APP_KEY", "APP_CA_KEY", "APP_ROOT_CA_KEY", "APP_CHAIN"
 
         ]
         for var in required_vars:

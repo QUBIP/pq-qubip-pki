@@ -176,7 +176,7 @@
             {% if purpose == "tls-client" %}
             <p>The Common Name (CN) serves as the primary identifier for the certificate holder. In client certificates it contains the IP address or the individual name.</p>
             <div class="cn-container">
-                <input type="text" id="clientIpInput" name="ip" placeholder="Enter IP Address (e.g., 192.168.1.1)">
+                <input type="text" id="clientIpInput" name="ip" placeholder="Enter IP Address or individual name (e.g., full name or hostname)">
                 <span class="error-message" id="clientIpError"></span>
             </div>
             {% endif %}
