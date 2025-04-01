@@ -1,103 +1,143 @@
-/* General page styling */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
     margin: 0;
     padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    text-align: center;
 }
 
-/* Container for the form */
 .container {
     max-width: 600px;
     margin: 50px auto;
-    background-color: white;
     padding: 20px;
+    background: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: left;
 }
 
-/* Header */
 h2 {
-    text-align: center;
-    color: #333;
+    color: #007BFF;
+    border-bottom: 2px solid #007BFF;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
 }
 
-/* Form input fields */
-input[type="text"],
-input[type="number"],
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 15px;
+}
+
+select,
+input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
 button {
     display: block;
     width: 100%;
     padding: 12px;
-    margin: 10px 0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
-}
-
-/* Button styling */
-button {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    cursor: pointer;
+    margin-top: 20px;
     font-size: 16px;
+    color: #fff;
+    background-color: #007BFF;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
 }
 
 button:hover {
-    background-color: #45a049;
-}
-
-/* Status message box */
-.status {
-    padding: 15px;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    margin-top: 20px;
-}
-
-/* Error messages in red */
-.status p {
-    margin: 0;
-}
-
-.status p.error {
-    color: red;
-}
-
-.status p.success {
-    color: green;
-}
-
-/* Styling for the download link */
-a {
-    display: inline-block;
-    text-align: center;
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    text-decoration: none;
-    border-radius: 4px;
-    margin-top: 15px;
-}
-
-a:hover {
     background-color: #0056b3;
 }
 
-/* Button styling for the homepage */
-.button {
-    display: inline-block;
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    text-align: center;
-    text-decoration: none;
-    border-radius: 4px;
+#certificate-actions {
     margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
 }
 
-.button:hover {
-    background-color: #45a049;
+#certificate-actions button {
+    width: auto;
+    padding: 10px 15px;
+}
+
+#certificate-content {
+    margin-top: 20px;
+    background: #eee;
+    padding: 15px;
+    border-radius: 5px;
+    display: none;
+}
+
+.nav {
+    background: #007BFF;
+    padding: 10px 0;
+    text-align: center;
+}
+
+.nav a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 18px;
+}
+
+.nav a:hover {
+    text-decoration: underline;
+}
+
+.cn-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* Space between rows */
+}
+
+.cn-option {
+    display: flex;
+    align-items: center;
+    /* Align checkbox, label, and input */
+    gap: 10px;
+    /* Space between elements */
+    padding: 5px;
+}
+
+.cn-option input[type="checkbox"] {
+    width: 15px;
+    /* Set fixed width for checkbox */
+    height: 15px;
+    margin-right: 5px;
+}
+
+.cn-option label {
+    font-size: 16px;
+    font-weight: bold;
+    min-width: 90px;
+    /* Ensures consistent spacing */
+}
+
+.cn-option input[type="text"] {
+    flex-grow: 1;
+    /* Makes input field take available space */
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    display: none;
+    /* Hidden by default */
+}
+.error-message {
+color: red;
+font-size: 12px;
+margin-left: 10px;
 }

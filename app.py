@@ -12,9 +12,10 @@ import base64
 from cryptography.hazmat.backends import default_backend
 from config import Config
 import ssl
+import getpass
 
 # Setup logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # Initialize flask app
 app = Flask(__name__, static_url_path='/static')
@@ -28,7 +29,8 @@ private_keys = {}  # Store private keys in memory
 
 @app.route('/generate_certificate/<purpose>', methods=['GET','POST'])
 def generate_certificate(purpose):
-    
+    logging.info(f"Environment user: {os.getenv('USER')}")
+    logging.info(f"Effective user: {getpass.getuser()}")
     if request.method == 'GET':
         return render_template('generate_certificate.html', purpose=purpose)
     if request.method == 'POST':
@@ -61,6 +63,7 @@ def generate_certificate(purpose):
                 return {"error": "Failed to generate private key"}, 500
             else:
                 # Store private key in memory (for temporary access)
+                logging.info("PRIVATE KEY GENERATED")
                 with open(key_file, 'r') as key_fp:
                     private_keys[cert_id] = key_fp.read()
                 # create subject material for csr and certificate
@@ -70,6 +73,7 @@ def generate_certificate(purpose):
                 subjectAltName = ""
                 if purpose != "code-signing":
                     subjectAltName = commonName
+                    logging.info(subjectAltName)
                     subj = f"/C=EU/O=QUBIP/CN={commonName}"
                 else:
                     subj = f"/C=EU/O=QUBIP/CN={commonName}/userId={cert_id}"
@@ -78,13 +82,10 @@ def generate_certificate(purpose):
                 generate_csr(key_file,csr_file, subj, conf_file, commonName, subjectAltName, cn_type)
                 if not csr_file:
                     return jsonify({"error": "Failed to generate CSR"}), 500
-
+                logging.info("CSR GENERATED")
                 # Sign the certificate with CA key
                 cert_file = sign_certificate(csr_file, cert_file, purpose, ca_key, ca_passfile, ca_cert, ca_conf)
 
-                # Delete the CSR file
-                if os.path.exists(csr_file):
-                    os.remove(csr_file)
                 with open(cert_file, 'r') as cert_fp:
                     certificate = cert_fp.read()
                 if not cert_file:
@@ -107,6 +108,7 @@ def generate_certificate(purpose):
 @app.route('/download_certificate/<ca>/<cert_id>', methods=['GET'])
 def download_certificate(ca, cert_id):
     filename = f'{cert_id}-cert.pem'
+    csr_file = f'{cert_id}.csr'
     chain_filename = f'{cert_id}-chain.pem'
     if ca == 'qubip-tls-ca':
         certs_path = app.config['TLS_CERTS_DIR']
@@ -136,6 +138,10 @@ def download_certificate(ca, cert_id):
         # delete key and csr after download
         key_path = os.path.join(certs_path, key_filename)
         print(key_path)
+        # Delete the CSR file
+        # if os.path.exists(csr_file):
+        #     os.remove(csr_file)
+
         if os.path.exists(key_path):
             os.remove(key_path)
         return send_file(
@@ -227,13 +233,13 @@ def view_ca_crl(ca):
     except Exception as e:
         return jsonify({'error': 'Error reading CRL'}), 500
 
-APP_CERT = app.config['APP_CERT']
-APP_KEY = app.config['APP_KEY']
-APP_CA_CERT = app.config['APP_CA_CERT']
-CHAIN = app.config['APP_CHAIN']
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ssl_context.load_cert_chain(certfile=CHAIN, keyfile=APP_KEY, password=None)
-# Home page
+# APP_CERT = app.config['APP_CERT']
+# APP_KEY = app.config['APP_KEY']
+# APP_CA_CERT = app.config['APP_CA_CERT']
+# CHAIN = app.config['APP_CHAIN']
+# ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+# ssl_context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+# ssl_context.load_cert_chain(certfile=CHAIN, keyfile=APP_KEY)
 @app.route('/')
 def home():
     # home_url = url_for('home')
@@ -241,4 +247,4 @@ def home():
     return render_template('home.html')  # Render the new home page template
 if __name__ == '__main__':
     logging.info("app.py - Starting Flask application with HTTPS...")
-    app.run(debug=True, host='127.0.0.1', port=5000, ssl_context=ssl_context)
+    app.run(debug=True, host='0.0.0.0', port=5000)

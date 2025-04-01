@@ -25,7 +25,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const fqdnError = document.getElementById("fqdnError");
     const ipError = document.getElementById("ipError");
     const clientIpError = document.getElementById("clientIpError");
+    const clientFqdnError = document.getElementById("clientFqdnError");
     const clientInput = document.getElementById("clientIpInput");
+    const clientFqdnCheckbox = document.getElementById("clientFqdnCheckbox");
+    const clientIpCheckbox = document.getElementById("clientIpCheckbox");
+    const clientFqdnInput = document.getElementById("clientFqdnInput");
+    const clientIpInput = document.getElementById("clientIpInput");
 
     // Reset checkboxes and inputs on page load
     if (purpose == "tls-server") {
@@ -50,36 +55,87 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             updateInputVisibility();
         });
+    }
+    else {
+        // tls-client
+        clientFqdnCheckbox.checked = false;
+        clientIpCheckbox.checked = false;
+        clientFqdnInput.style.display = "none";
+        clientFqdnInput.value = "";
+        clientIpInput.style.display = "none";
+        clientIpInput.value = "";
 
+
+        clientFqdnCheckbox.addEventListener("change", function () {
+            if (this.checked) {
+                clientIpCheckbox.checked = false;
+            }
+            updateInputVisibility();
+        });
+
+        clientIpCheckbox.addEventListener("change", function () {
+            if (this.checked) {
+                clientFqdnCheckbox.checked = false;
+            }
+            updateInputVisibility();
+        });
     }
 
     function updateInputVisibility() {
-        if (purpose == "tls-client") {
-            clientIpError.textContent = "";
-        }
-        if (fqdnCheckbox.checked) {
-            fqdnInput.style.display = "inline-block";
-            fqdnInput.required = true;
-            fqdnError.textContent = "";
-        } else {
-            fqdnInput.style.display = "none";
-            fqdnInput.value = "";
-            fqdnInput.required = false;
-            if (fqdnError.textContent != "") {
+        if (purpose == 'tls-server') {
+
+            if (fqdnCheckbox.checked) {
+                fqdnInput.style.display = "inline-block";
+                fqdnInput.required = true;
                 fqdnError.textContent = "";
+            } else {
+                fqdnInput.style.display = "none";
+                fqdnInput.value = "";
+                fqdnInput.required = false;
+                if (fqdnError.textContent != "") {
+                    fqdnError.textContent = "";
+                }
+            }
+    
+            if (ipCheckbox.checked) {
+                ipInput.style.display = "inline-block";
+                ipInput.required = true;
+                ipError.textContent = "";
+            } else {
+                ipInput.style.display = "none";
+                ipInput.value = "";
+                ipInput.required = false;
+                if (ipError.textContent != "") {
+                    ipError.textContent = "";
+                }
             }
         }
-
-        if (ipCheckbox.checked) {
-            ipInput.style.display = "inline-block";
-            ipInput.required = true;
-            ipError.textContent = "";
-        } else {
-            ipInput.style.display = "none";
-            ipInput.value = "";
-            ipInput.required = false;
-            if (ipError.textContent != "") {
-                ipError.textContent = "";
+        else {
+            // client
+            if (clientFqdnCheckbox.checked) {
+                clientFqdnInput.style.display = "inline-block";
+                clientFqdnInput.required = true;
+                clientFqdnError.textContent = "";
+            } else {
+                clientFqdnInput.style.display = "none";
+                clientFqdnInput.value = "";
+                clientFqdnInput.required = false;
+                if (clientFqdnError.textContent != "") {
+                    clientFqdnError.textContent = "";
+                }
+            }
+    
+            if (clientIpCheckbox.checked) {
+                clientIpInput.style.display = "inline-block";
+                clientIpInput.required = true;
+                clientIpError.textContent = "";
+            } else {
+                clientIpInput.style.display = "none";
+                clientIpInput.value = "";
+                clientIpInput.required = false;
+                if (clientIpError.textContent != "") {
+                    clientIpError.textContent = "";
+                }
             }
         }
     }
@@ -120,11 +176,33 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
         else {
-            //client
-            if (!ipPattern.test(clientInput.value.trim())) {
+            // Validate FQDN
+            if (clientFqdnCheckbox.checked) {
                 clientIpError.textContent = "";
+                // if (!fqdnPattern.test(clientFqdnInput.value.trim())) {
+                //     clientFqdnError.textContent = "Invalid FQDN format.";
+                //     clientIpError.textContent = "";
+                //     isValid = false;
+                // }
+                // else {
+                //     clientFqdnError.textContent = "";
+                //     cnType = "fqdn";
+                //     commonName = clientFqdnInput.value.trim();
+                // }
                 cnType = "fqdn";
-                commonName = clientInput.value.trim();
+                commonName = clientFqdnInput.value.trim();
+            }
+            // Validate IP
+            if (clientIpCheckbox.checked) {
+                clientFqdnError.textContent = "";
+                if (!ipPattern.test(clientIpInput.value.trim())) {
+                    clientIpError.textContent = "Invalid IP address format.";
+                    isValid = false;
+                } else {
+                    clientIpError.textContent = "";
+                    cnType = "ip";
+                    commonName = clientIpInput.value.trim();
+                }
             }
         }
         if (!cnType) {
@@ -160,16 +238,27 @@ document.addEventListener("DOMContentLoaded", function () {
             })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Certificate generation response: ', data);
+                    //console.log('Certificate generation response: ', data);
                     const ca = data.ca;
                     const cert_id = data.certificate_id;
+                    // show buttons
                     certActions.style.display = "flex";
+
+                    // Show the certificate content (if available)
+                    if (data.certificate) {
+                        certContent.style.display = "block";
+                        certText.textContent = data.certificate;
+                    }
+
+                    // Show success message
                     successMessage.style.display = "block";
+
+                    // Show buttons
                     certActions.style.display = "flex";
 
                     // Set up download button
                     let codesignCertificateDownloaded = false;
-                    console.log(codesignCertificateDownloaded)
+                    //console.log(codesignCertificateDownloaded)
                     downloadBtn.addEventListener("click", function () {
                         if (codesignCertificateDownloaded) {
                             alert("The private key has been deleted for security reasons. Please generate another certificate if you need it.");
@@ -210,7 +299,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!validation.isValid) {
                 return;
             }
-            // console.log('Form submitted');
+            console.log('Form submitted');
             const data = {
                 algorithm: document.getElementById('key_algorithm').value,
                 commonName: validation.commonName,
@@ -231,7 +320,7 @@ document.addEventListener("DOMContentLoaded", function () {
             })
                 .then(response => response.json())
                 .then(data => {
-                    //console.log(data)
+                    ////console.log(data)
 
                     // show buttons
                     certActions.style.display = "flex";
@@ -251,7 +340,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     // Set up download button
                     let certificateDownloaded = false;
-                    console.log(certificateDownloaded)
+                    //console.log(certificateDownloaded)
                     downloadBtn.addEventListener("click", function () {
                         if (certificateDownloaded) {
                             alert("The private key has been deleted for security reasons. Please generate another certificate if you need it.");
@@ -293,10 +382,10 @@ document.addEventListener("DOMContentLoaded", function () {
         const certificate = this.getAttribute("data-cert");
         const filename = this.getAttribute("data-cert-filename");
         viewBtn.addEventListener("click", function () {
-            console.log('Viewing certificate');
-            console.log(ca);
-            console.log(certificate);
-            console.log(filename);
+            //console.log('Viewing certificate');
+            //console.log(ca);
+            //console.log(certificate);
+            //console.log(filename);
         });
     });
 

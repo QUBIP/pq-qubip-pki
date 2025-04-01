@@ -1,0 +1,99 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    text-align: center;
+}
+.container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+h1 {
+    color: #007BFF;
+}
+h2 {
+    color: #007BFF;
+    border-bottom: 2px solid #007BFF;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+.button-group {
+    display: flex;
+    justify-content: center; /* Center buttons */
+    gap: 10px; /* Spacing between buttons */
+    margin-bottom: 10px; /* Space between rows */
+}
+.button-container {
+    display: flex;
+    justify-content: space-between; /* equal spacing */
+    flex-wrap: wrap;
+    align-items: flex-start; /* Align buttons to the left */
+    gap: 10px; /* Adds space between buttons */
+}
+.ca-section {
+    margin-bottom: 20px;
+    text-align: left;
+}
+.button {
+    display: inline-block; /* Makes buttons stack */
+    width: fit-content; /* Ensures buttons fit their content */
+    padding: 12px 20px;
+    font-size: 16px;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background 0.3s ease-in-out;
+    text-align: center;
+    min-width: 180px;
+}
+.purpose {
+    color: black;
+    background-color: darksalmon;
+}
+.purpose:hover {
+    background-color: indianred;
+}
+.button:hover {
+    background-color: #0056b3;
+}
+.nav {
+    background: #007BFF;
+    padding: 10px 0;
+    text-align: center;
+}
+.nav a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 18px;
+}
+.nav a:hover {
+    text-decoration: underline;
+}
+/* Unique colors for distinction */
+.cert-button {
+    background-color: #6a00ff;
+}
+.cert:hover {
+    background-color: #0056b3;
+}
+
+.crl-button {
+    background-color: #744896;
+}
+.crl-button:hover {
+    background-color: #971fb2;
+}
+
+.divider{
+    width:5px;
+    height:auto;
+    display:inline-block;
+}

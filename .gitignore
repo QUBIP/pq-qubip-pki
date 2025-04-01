@@ -9,3 +9,7 @@ react_app
 .env.dev
 .env.prod
 app-certs
+test_certs
+test_etc
+venv
+*.wsgi

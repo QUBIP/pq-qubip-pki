@@ -10,9 +10,10 @@ import pprint
 
 classical_algorithms = ['rsa2048', 'rsa4096', 'ed25519']
 
-pq_algorithms = ['mldsa44', 'mldsa65', 'mldsa87']
+pq_algorithms = ['mldsa44', 'mldsa65', 'mldsa87', 'mldsa44_ed25519', 'mldsa65_ed25519']
 cas = ['qubip-root-ca', 'qubip-software-ca', 'qubip-tls-ca']
 env = os.environ.copy()
+logging.basicConfig(level=logging.INFO)
 
 # functions called by /generate_certificate API
 
@@ -38,15 +39,15 @@ def retrieve_ca_info(config, ca, cert_id):
     cert_file = os.path.join(certs_dir, f'{cert_id}-cert.pem')
     ca_key = os.path.join(ca_dir, 'private',f'{ca}.key')
 
-    logging.info(f"CA directory: {ca_dir}")
-    logging.info(f"Certificates directory: {certs_dir}")
-    logging.info(f"key: {key_file}")
-    logging.info(f"CA password file: {ca_passfile}")
-    logging.info(f"CA certificate: {ca_cert}")
-    logging.info(f"CA configuration: {ca_conf}")
-    logging.info(f"CA chain: {ca_chain}")
-    logging.info(f"CSR file: {csr_file}")
-    logging.info(f"Certificate file: {cert_file}")
+    # logging.info(f"CA directory: {ca_dir}")
+    # logging.info(f"Certificates directory: {certs_dir}")
+    # logging.info(f"key: {key_file}")
+    # logging.info(f"CA password file: {ca_passfile}")
+    # logging.info(f"CA certificate: {ca_cert}")
+    # logging.info(f"CA configuration: {ca_conf}")
+    # logging.info(f"CA chain: {ca_chain}")
+    # logging.info(f"CSR file: {csr_file}")
+    # logging.info(f"Certificate file: {cert_file}")
 
     return key_file, csr_file, cert_file, ca_key, ca_passfile, ca_cert, ca_conf, ca_chain
 
@@ -82,7 +83,9 @@ def generate_private_key(key_file, algorithm):
 def generate_csr(private_key, csr_filename, subject, conf, commonName, subjectAltName, cn_type):
     if subjectAltName != "":  
         # tls-server or tls-client
+        logging.info("SAN ENVIRONMENT VARIABLE")
         env["SAN"] = subjectAltName
+        logging.info(env["SAN"])
         if cn_type == "fqdn":
             reqexts = "fqdn_ext"
         elif cn_type == "ip":
@@ -90,6 +93,7 @@ def generate_csr(private_key, csr_filename, subject, conf, commonName, subjectAl
     else:
         # codesign
         reqexts = "codesign_reqext"
+    logging.info(reqexts)
     try:
         subprocess.run([
             "openssl", "req", "-new", 
@@ -120,7 +124,7 @@ def sign_certificate(csr_file, crt_file, purpose, ca_key, ca_passfile, ca_cert, 
             "-in", csr_file,
             "-out", crt_file,
             "-extensions", ext,
-            "-days", "7305",
+            "-days", "365",
             "-batch" # automatically approve signing
         ], check=True)
         if os.path.isfile(crt_file):
