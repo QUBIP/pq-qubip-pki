@@ -22,31 +22,30 @@ This document defines the policies and procedures for the issuance, management, 
 | **Category**       | **Policy**                                         |
 |--------------------|---------------------------------------------------|
 | **Who Can Request?** | QUBIP Partners. |
-| **Usage**          | TLS/SSL (internal services), email encryption, code signing, device signing. |
+| **Usage**          | TLS/SSL (internal services), code signing, device signing. |
 | **Validity Period** | 1 year (users, code signing), 2 years (servers). |
-| **Key Algorithm**  | classical or post-quantum algorithms. |
+| **Key Algorithm**  | classical or post-quantum (pure and composite) algorithms. |
 | **Revocation**     | Revoked if an employee leaves, a server is decommissioned, or compromised. |
 
-## 4. Certificate Issuance Procedure
+## 4. Certificate Issuance Procedure (Version 1)
+1. The user decides the key algorithm and the type of certificate they need: tls-server, tls-client or code-signing.
+2. The backend generates both the certificate and the key. The certificate is signed by the intermediate CA (TLS-CA if the purpose is "tls-server" or "tls-client", SOFTWARE-CA if the purpose is "code-signing").
+3. The user downloads a zip file containing the key, the certificate and the chain.
+
+## 5. Certificate Issuance Procedure (Version 2)
 1. The requester submits a certificate request (CSR) to the Intermediate CA.
 2. The request is reviewed for compliance with the policy.
 3. The Intermediate CA signs and issues the certificate.
 4. The certificate is distributed to the requester and added to the appropriate trust store.
 
-## 5. Revocation and Certificate Status Checking
+## 6. Revocation and Certificate Status Checking
 - A **Certificate Revocation List (CRL)** is published every 24 hours.
 - An **Online Certificate Status Protocol (OCSP) responder** is available for real-time revocation checks.
 
-## 6. Trust Establishment
+## 7. Trust Establishment
 - The Root CA certificate must be manually installed on all systems that need to trust the PKI.
 - Intermediate CA certificates must be included in the certificate chain for verification.
 
-## 7. Security Considerations
+## 8. Security Considerations
 - Private keys must never be shared or exported.
-
-## 8. Policy Review and Updates
-- This policy is reviewed annually.
-- Updates require approval from security leadership.
-
----
 
