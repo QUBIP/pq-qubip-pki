@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PKI Certificate Manager</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='home_style.css') }}">
+    <link rel="stylesheet" href="/static/css/home_style.css">
 </head>
 <body>
 
@@ -25,13 +25,13 @@
         <strong>QUBIP Root CA</strong>
         <div class="button-container">
             
-            <a href="#" class="button cert-button" cert-name="qubip-root-ca">Download certificate</a>
-            <a href="#" class="button crl-button" crl-name="qubip-root-ca">Download CRL</a>
+            <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-root-ca">Download certificate</a>
+            <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-root-ca">Download CRL</a>
         </div>
         <div class="divider"></div>
         <div class="button-container">
-            <a href="#" class="button cert-button" cert-name="qubip-root-ca">View certificate</a>
-            <a href="#" class="button crl-button" crl-name="qubip-root-ca">View CRL</a>
+            <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-root-ca">View certificate</a>
+            <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-root-ca">View CRL</a>
 
         </div>
         </div>
@@ -40,13 +40,13 @@
             <strong>QUBIP TLS CA</strong>
             <div class="button-container">
                         
-                <a href="#" class="button cert-button" cert-name="qubip-tls-ca">Download certificate</a>
-                <a href="#" class="button crl-button" crl-name="qubip-tls-ca">Download CRL</a>
+                <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-tls-ca">Download certificate</a>
+                <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-tls-ca">Download CRL</a>
             </div>
             <div class="divider"></div>
             <div class="button-container">
-                <a href="#" class="button cert-button" cert-name="qubip-tls-ca">View certificate</a>
-                <a href="#" class="button crl-button" crl-name="qubip-tls-ca">View CRL</a>
+                <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-tls-ca">View certificate</a>
+                <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-tls-ca">View CRL</a>
 
             </div>
         </div>
@@ -55,17 +55,17 @@
             <strong>QUBIP Software CA</strong>
             <div class="button-container">
                         
-                <a href="#" class="button cert-button" cert-name="qubip-software-ca">Download certificate</a>
-                <a href="#" class="button crl-button" crl-name="qubip-software-ca">Download CRL</a>
+                <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-software-ca">Download certificate</a>
+                <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-software-ca">Download CRL</a>
             </div>
             <div class="divider"></div>
             <div class="button-container">
-                <a href="#" class="button cert-button" cert-name="qubip-software-ca">View certificate</a>
-                <a href="#" class="button crl-button" crl-name="qubip-software-ca">View CRL</a>
+                <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-software-ca">View certificate</a>
+                <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-software-ca">View CRL</a>
 
             </div>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="/static/js-scripts/script.js"></script>
 </body>
 </html>
