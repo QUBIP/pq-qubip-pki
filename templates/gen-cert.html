@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Certificate</title>
+    <link rel="stylesheet" href="/static/css/certificate_generation_style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h2>Generate {{ purpose }} certificate</h2>
+        <form id="certForm" method="POST"
+            action="{{ url_for('generate_certificate', purpose=request.args.get('purpose', purpose)) }}"
+            data-purpose="{{ request.args.get('purpose', purpose) }}">
+            <label for="key_algorithm">Key Algorithm</label>
+            <select id="key_algorithm" name="key_algorithm">
+                <option value="rsa2048">RSA2048</option>
+                <option value="rsa4096">RSA4096</option>
+                <option value="ed25519">ED25519</option>
+                <option value="mldsa44">MLDSA44</option>
+                <option value="mldsa65">MLDSA65</option>
+                <option value="mldsa87">MLDSA87</option>
+                <option value="mldsa44_ed25519">MLDSA44-ED25519</option>
+                <option value="mldsa65_ed25519">MLDSA65-ED25519</option>
+            </select>
+            {% if purpose != "code-signing" %}
+            <label for="commonName">Common Name</label>
+            <p>The Common Name (CN) serves as the primary identifier for the certificate holder. It can be either an IP
+                address or an FQDN.</p>
+            <div class="cn-container">
+                <!-- FQDN -->
+                <div class="cn-option">
+                    <label for="fqdnCheckbox">FQDN</label>
+                    <input type="checkbox" class="fqdn-checkbox" name="cn_type" value="fqdn">
+                    <input type="text" class="fqdn-input" name="fqdn" placeholder="Enter FQDN" style="display: none;">
+                    <span class="error-message fqdn-error"></span>
+                </div>
+
+                <!-- IP Address -->
+                <div class="cn-option">
+                    <label for="ipCheckbox">IP Address</label>
+                    <input type="checkbox" class="ip-checkbox" name="cn_type" value="ip">
+                    <input type="text" class="ip-input" name="ip" placeholder="Enter IP Address" style="display: none;">
+                    <span class="error-message ip-error"></span>
+                </div>
+            </div>
+            {% endif %}
+            <button id="submitButton" type="submit">Generate Private Key and Certificate</button>
+        </form>
+        <div id="certificate-actions" style="display: none;">
+            <a href="#" class="button" id="download-cert-btn">Download Key, Certificate and chain</a>
+        </div>
+        <div id="certificate-content">
+            <pre id="certText"></pre>
+        </div>
+    </div>
+    <script src="/static/js-scripts/gen-cert.js"></script>
+</body>
+
+</html>

@@ -32,7 +32,7 @@ def generate_certificate(purpose):
     logging.info(f"Environment user: {os.getenv('USER')}")
     logging.info(f"Effective user: {getpass.getuser()}")
     if request.method == 'GET':
-        return render_template('generate_certificate.html', purpose=purpose)
+        return render_template('gen-cert.html', purpose=purpose)
     if request.method == 'POST':
         try:
             data = request.json or request.form
@@ -205,7 +205,7 @@ def view_ca_certificate(ca):
     # Read and return the certificate content
     try:
         cert_data = get_ca_certificate_details(filename)
-        return render_template('view_ca_certificate.html', 
+        return render_template('view-ca-certificate.html', 
                                cert_data=cert_data,
                                ca=ca)
     except Exception as e:
@@ -229,7 +229,7 @@ def view_ca_crl(ca):
     # Read and return the CRL content
     try:
         crl_data = get_crl_details(filename)
-        return render_template('view_ca_crl.html', crl_data=crl_data, ca=ca)
+        return render_template('view-ca-crl.html', crl_data=crl_data, ca=ca)
     except Exception as e:
         return jsonify({'error': 'Error reading CRL'}), 500
 
