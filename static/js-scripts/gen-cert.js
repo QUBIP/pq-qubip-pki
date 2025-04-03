@@ -126,8 +126,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         return { isValid, cnType, commonName };
     }
-    document.getElementById("submitButton").addEventListener("click", function (event) {
+    form = document.getElementById("certForm");
+    form.addEventListener("submit", function (event) {
         event.preventDefault();
+        // Simulate certificate generation
+        form.style.display = "none";
         let algorithm = document.getElementById('key_algorithm').value;
         let commonName = null;
         let cnType = null;
@@ -191,7 +194,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         })
                         .catch(error => {
                             console.error("Error downloading certificate:", error);
-                            alert("Error: Failed to download certificate. It may have already been deleted.");
+                            alert("Error: Failed to download key. It may have already been deleted.");
                         });
                 }); // end event download
 

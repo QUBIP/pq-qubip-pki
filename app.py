@@ -42,6 +42,7 @@ def generate_certificate(purpose):
                 ca_key_file = app.config['TLS_CA_KEY']
                 ca_passfile = app.config['TLS_CA_PASSWORD']
                 ca_cert = app.config['TLS_CA_CERT']
+                ca_chain = app.config['TLS_CA_CHAIN']
                 if purpose == 'tls-server':
                     conf_file = app.config['TLS_SERVER_CONF']
                 else:
@@ -54,11 +55,12 @@ def generate_certificate(purpose):
                 ca_passfile = app.config['SOFTWARE_CA_PASSWORD']
                 ca_cert = app.config['SOFTWARE_CA_CERT']
                 conf_file = app.config['CODESIGN_CONF']
+                ca_chain = app.config['SOFTWARE_CA_CHAIN']
             logging.info(data)
             algorithm = data.get('algorithm') 
             logging.debug(f"Using algorithm: {algorithm}")
 
-            commonName = data.get('commonName')
+            commonName = data.get('common_name')
             cn_type = data.get('cn_type') # IP/DNS/Email
             cert_id = f'{str(uuid.uuid4().hex[:10 ])}-{purpose}' 
             key_file = os.path.join(ca_certs_dir, f'{cert_id}.key')
@@ -69,6 +71,7 @@ def generate_certificate(purpose):
                 return {"error": "Failed to generate private key"}, 500
             else:
                 logging.info("PRIVATE KEY GENERATED")
+                logging.info(f"Key file: {key_file}")
                 with open(key_file, 'r') as key_fp:
                     private_keys[cert_id] = key_fp.read()
                 key_fp.close()
@@ -76,7 +79,7 @@ def generate_certificate(purpose):
                 subjectAltName = ""
                 if purpose != "code-signing":
                     subjectAltName = commonName
-                    logging.info(subjectAltName)
+                    logging.info(f"SAN = {subjectAltName}")
                     subj = f"/C=EU/O=QUBIP/CN={commonName}"
                 else:
                     subj = f"/C=EU/O=QUBIP/CN={commonName}/userId={cert_id}"
@@ -95,7 +98,7 @@ def generate_certificate(purpose):
                 else:
                     chain_file = f'{cert_id}-chain.pem'
                     chain_path = os.path.join(ca_certs_dir, chain_file)
-                    create_certificate_chain(openssl, cert_file, ca_chain, chain_path)
+                    create_certificate_chain(cert_file, ca_chain, chain_path)
                     return jsonify({
                         'ca': ca,
                         'certificate_id': cert_id,
@@ -141,8 +144,8 @@ def download_certificate(ca, cert_id):
         key_path = os.path.join(certs_path, key_filename)
         print(key_path)
         # Delete the CSR file
-        # if os.path.exists(csr_file):
-        #     os.remove(csr_file)
+        if os.path.exists(csr_file):
+            os.remove(csr_file)
 
         if os.path.exists(key_path):
             os.remove(key_path)

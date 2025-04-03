@@ -141,3 +141,22 @@ color: red;
 font-size: 12px;
 margin-left: 10px;
 }
+
+a.button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    text-align: center;
+    font-size: 16px;
+    color: #ffffff;
+    background-color: green;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+}
+a.button:hover {
+    background-color: #00b38f;
+}

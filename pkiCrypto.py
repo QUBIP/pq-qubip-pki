@@ -43,9 +43,10 @@ def generate_private_key(openssl, key_file, algorithm):
         sys.exit(1)
 
 def generate_csr(openssl, private_key, csr_filename, subject, conf, commonName, subjectAltName, cn_type):
+    env = os.environ
     if subjectAltName != "":  
         # tls-server or tls-client
-        logging.info("SAN ENVIRONMENT VARIABLE")
+        logging.info(f"SAN = {subjectAltName}")
         env["SAN"] = subjectAltName
         logging.info(env["SAN"])
         if cn_type == "fqdn":
@@ -128,7 +129,7 @@ def create_certificate_chain(cert_file, ca_chain, chain_file):
 
 # functions called by viewing ca certs/crl APIs
 
-def get_ca_certificate_details(copenssl, ca_cert_path):
+def get_ca_certificate_details(openssl, ca_cert_path):
     cert_command = f"{openssl} x509 -in {ca_cert_path} -noout -text"
     ca_cert_data = ""
     ca_cert_data = subprocess.check_output(cert_command, shell=True, text=True).strip()
