@@ -13,6 +13,7 @@ else:
 class Config:
 
     # Application-specific configurations
+    OPENSSL = os.getenv("OPENSSL")
     ROOT_CA = os.getenv("ROOT_CA")
     TLS_CA = os.getenv("TLS_CA")
     SOFTWARE_CA = os.getenv("SOFTWARE_CA")
@@ -72,6 +73,7 @@ class Config:
     @classmethod
     def validate(cls):
         required_vars = [
+            "OPENSSL",
             "ROOT_CA", "TLS_CA", "SOFTWARE_CA",
             "TLS_SERVER", "TLS_CLIENT", "CODESIGN",
             "ROOT_CA_DIR", "TLS_CA_DIR", "SOFTWARE_CA_DIR",

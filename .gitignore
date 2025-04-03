@@ -12,4 +12,6 @@ app-certs
 test_certs
 test_etc
 venv
+etc
+certs
 *.wsgi

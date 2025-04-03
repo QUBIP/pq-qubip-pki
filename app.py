@@ -4,7 +4,7 @@ import os
 import uuid
 import logging
 import tempfile
-from pkiCrypto import generate_private_key, generate_csr, sign_certificate, create_certificate_chain, retrieve_ca_info, get_ca_certificate_details, get_crl_details
+from pkiCrypto import generate_private_key, generate_csr, sign_certificate, create_certificate_chain, get_ca_certificate_details, get_crl_details
 from io import BytesIO # allows to create files without saving them on disk (useful for private key)
 from zipfile import ZipFile 
 from cryptography import x509
@@ -26,11 +26,10 @@ app.config.from_object(Config)
 # Validate configurations
 Config.validate()
 private_keys = {}  # Store private keys in memory
+openssl = app.config['OPENSSL']
 
 @app.route('/generate_certificate/<purpose>', methods=['GET','POST'])
 def generate_certificate(purpose):
-    logging.info(f"Environment user: {os.getenv('USER')}")
-    logging.info(f"Effective user: {getpass.getuser()}")
     if request.method == 'GET':
         return render_template('gen-cert.html', purpose=purpose)
     if request.method == 'POST':
@@ -39,6 +38,10 @@ def generate_certificate(purpose):
             if purpose == 'tls-server' or purpose == 'tls-client':
                 ca = app.config['TLS_CA']
                 ca_certs_dir = app.config['TLS_CERTS_DIR']
+                ca_conf = app.config['TLS_CA_CONF']
+                ca_key_file = app.config['TLS_CA_KEY']
+                ca_passfile = app.config['TLS_CA_PASSWORD']
+                ca_cert = app.config['TLS_CA_CERT']
                 if purpose == 'tls-server':
                     conf_file = app.config['TLS_SERVER_CONF']
                 else:
@@ -46,30 +49,30 @@ def generate_certificate(purpose):
             elif purpose == 'code-signing':
                 ca = app.config['SOFTWARE_CA']
                 ca_certs_dir = app.config['SOFTWARE_CERTS_DIR']
+                ca_conf = app.config['SOFTWARE_CA_CONF']
+                ca_key_file = app.config['SOFTWARE_CA_KEY']
+                ca_passfile = app.config['SOFTWARE_CA_PASSWORD']
+                ca_cert = app.config['SOFTWARE_CA_CERT']
                 conf_file = app.config['CODESIGN_CONF']
-            
-            # Get the certificate details
+            logging.info(data)
             algorithm = data.get('algorithm') 
+            logging.debug(f"Using algorithm: {algorithm}")
+
             commonName = data.get('commonName')
             cn_type = data.get('cn_type') # IP/DNS/Email
-
-            # Generate a unique certificate ID
             cert_id = f'{str(uuid.uuid4().hex[:10 ])}-{purpose}' 
+            key_file = os.path.join(ca_certs_dir, f'{cert_id}.key')
 
-            # Generate the private key, CSR, and certificate
-            key_file, csr_file, cert_file, ca_key, ca_passfile, ca_cert, ca_conf, ca_chain = retrieve_ca_info(app.config, ca, cert_id)
-            generate_private_key(key_file, algorithm)
+            logging.debug(f"Generating certificate for {purpose} with commonName: {commonName}, algorithm: {algorithm}, cert_id: {cert_id}")
+            generate_private_key(openssl, key_file, algorithm)
             if not key_file:
                 return {"error": "Failed to generate private key"}, 500
             else:
-                # Store private key in memory (for temporary access)
                 logging.info("PRIVATE KEY GENERATED")
                 with open(key_file, 'r') as key_fp:
                     private_keys[cert_id] = key_fp.read()
-                # create subject material for csr and certificate
                 key_fp.close()
 
-                # create subject material for csr and certificate
                 subjectAltName = ""
                 if purpose != "code-signing":
                     subjectAltName = commonName
@@ -77,14 +80,13 @@ def generate_certificate(purpose):
                     subj = f"/C=EU/O=QUBIP/CN={commonName}"
                 else:
                     subj = f"/C=EU/O=QUBIP/CN={commonName}/userId={cert_id}"
-
-                # Generate the CSR 
-                generate_csr(key_file,csr_file, subj, conf_file, commonName, subjectAltName, cn_type)
+                csr_file = os.path.join(ca_certs_dir, f'{cert_id}.csr')
+                generate_csr(openssl, key_file,csr_file, subj, conf_file, commonName, subjectAltName, cn_type)
                 if not csr_file:
                     return jsonify({"error": "Failed to generate CSR"}), 500
                 logging.info("CSR GENERATED")
-                # Sign the certificate with CA key
-                cert_file = sign_certificate(csr_file, cert_file, purpose, ca_key, ca_passfile, ca_cert, ca_conf)
+                cert_file = os.path.join(ca_certs_dir, f'{cert_id}-cert.pem')
+                sign_certificate(openssl, csr_file, cert_file, purpose, ca_key_file, ca_passfile, ca_cert, ca_conf)
 
                 with open(cert_file, 'r') as cert_fp:
                     certificate = cert_fp.read()
@@ -93,7 +95,7 @@ def generate_certificate(purpose):
                 else:
                     chain_file = f'{cert_id}-chain.pem'
                     chain_path = os.path.join(ca_certs_dir, chain_file)
-                    create_certificate_chain(cert_file, ca_chain, chain_path)
+                    create_certificate_chain(openssl, cert_file, ca_chain, chain_path)
                     return jsonify({
                         'ca': ca,
                         'certificate_id': cert_id,
@@ -198,13 +200,11 @@ def view_ca_certificate(ca):
     elif ca == 'qubip-software-ca':
         filename = app.config['SOFTWARE_CA_CERT']
 
-    # Check if the certificate file exists
     if not os.path.exists(filename):
         return jsonify({'error': 'Certificate not found'}), 404
 
-    # Read and return the certificate content
     try:
-        cert_data = get_ca_certificate_details(filename)
+        cert_data = get_ca_certificate_details(openssl, filename)
         return render_template('view-ca-certificate.html', 
                                cert_data=cert_data,
                                ca=ca)
@@ -225,26 +225,17 @@ def view_ca_crl(ca):
     logging.info(f"app.py - CRL filename: {filename}")
     if not os.path.exists(filename):
         return jsonify({'error': 'CRL not found'}), 404
-
-    # Read and return the CRL content
     try:
-        crl_data = get_crl_details(filename)
+        crl_data = get_crl_details(openssl, filename)
         return render_template('view-ca-crl.html', crl_data=crl_data, ca=ca)
     except Exception as e:
         return jsonify({'error': 'Error reading CRL'}), 500
 
-# APP_CERT = app.config['APP_CERT']
-# APP_KEY = app.config['APP_KEY']
-# APP_CA_CERT = app.config['APP_CA_CERT']
-# CHAIN = app.config['APP_CHAIN']
-# ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-# ssl_context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
-# ssl_context.load_cert_chain(certfile=CHAIN, keyfile=APP_KEY)
 @app.route('/')
 def home():
-    # home_url = url_for('home')
-    # logging.info("app.py - HOME URL: ", home_url)
-    return render_template('home.html')  # Render the new home page template
+    result = subprocess.run([openssl, 'version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    logging.debug(f"OpenSSL Version: {result.stdout.decode()}")
+    return render_template('home.html')
+
 if __name__ == '__main__':
-    logging.info("app.py - Starting Flask application with HTTPS...")
     app.run(debug=True, host='0.0.0.0', port=5000)

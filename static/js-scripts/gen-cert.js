@@ -9,13 +9,22 @@ document.addEventListener("DOMContentLoaded", function () {
     const certText = document.getElementById("certText");
 
     // Common Name fields (Handles both tls-server and tls-client)
-
     const fqdnCheckboxes = document.querySelectorAll(".fqdn-checkbox");
     const ipCheckboxes = document.querySelectorAll(".ip-checkbox");
     const fqdnInputs = document.querySelectorAll(".fqdn-input");
     const ipInputs = document.querySelectorAll(".ip-input");
     const fqdnErrors = document.querySelectorAll(".fqdn-error");
     const ipErrors = document.querySelectorAll(".ip-error");
+
+    // Create success message element
+    const successMessage = document.createElement("p");
+    successMessage.id = "success-message";
+    successMessage.style.display = "none";
+    successMessage.style.color = "green";
+    successMessage.style.fontWeight = "bold";
+    successMessage.textContent = "Certificate generated successfully!";
+    certForm.parentNode.insertBefore(successMessage, certActions);
+
 
     // Reset checkboxes and inputs on page load
     function resetCheckboxes() {
@@ -119,40 +128,76 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     document.getElementById("submitButton").addEventListener("click", function (event) {
         event.preventDefault();
-
+        let algorithm = document.getElementById('key_algorithm').value;
+        let commonName = null;
+        let cnType = null;
         if (purpose === "code-signing") {
-            fetch(`/generate_certificate/${purpose}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ algorithm: document.getElementById('key_algorithm').value })
-            }).then(response => response.json())
-                .then(data => {
-                    certActions.style.display = "flex";
-                    if (data.certificate) {
-                        certContent.style.display = "block";
-                        certText.textContent = data.certificate;
-                    }
-                });
+            commonName = "";
+            cnType = "";
         } else {
+            // tls-server or tls-client
+
             const validation = validateInput();
             if (!validation.isValid) return;
-
-            fetch(`/generate_certificate/${purpose}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    algorithm: document.getElementById('key_algorithm').value,
-                    commonName: validation.commonName,
-                    cn_type: validation.cnType
-                })
-            }).then(response => response.json())
-                .then(data => {
-                    certActions.style.display = "flex";
-                    if (data.certificate) {
-                        certContent.style.display = "block";
-                        certText.textContent = data.certificate;
-                    }
-                });
+            // console.log('Form submitted');
+            commonName = validation.commonName;
+            cnType = validation.cnType;
         }
+        const data = {
+            common_name: commonName,
+            algorithm: algorithm,
+            purpose: purpose,
+            cn_type: cnType
+        };
+        console.log(data);
+        fetch(`/generate_certificate/${purpose}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(response => response.json())
+            .then(data => {
+                certActions.style.display = "flex";
+                if (data.certificate) {
+                    certContent.style.display = "block";
+                    certText.textContent = data.certificate;
+                }
+                successMessage.style.display = "block";
+                certActions.style.display = "flex";
+                let certificateDownloaded = false;
+                console.log(certificateDownloaded)
+                downloadBtn.addEventListener("click", function () {
+                    if (certificateDownloaded) {
+                        alert("The private key has been deleted for security reasons. Please generate another certificate if you need it.");
+                        return; // Prevent further execution
+                    }
+
+                    // Show a confirmation popup before downloading
+                    const userConfirmed = confirm("Warning: This certificate and private key can only be downloaded ONCE. After that, the private key will be deleted from the server. Do you want to proceed?");
+
+                    if (!userConfirmed) return; // Stop if the user cancels
+
+                    fetch(`/download_certificate/${data.ca}/${data.certificate_id}`, { method: 'GET' })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Failed to download certificate');
+                            return response.blob();
+                        })
+                        .then(blob => {
+                            const link = document.createElement('a');
+                            link.href = URL.createObjectURL(blob);
+                            link.download = `${data.certificate_id}.zip`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        })
+                        .catch(error => {
+                            console.error("Error downloading certificate:", error);
+                            alert("Error: Failed to download certificate. It may have already been deleted.");
+                        });
+                }); // end event download
+
+            })
+            .catch(error => {
+                console.error("Error generating the certificate: ", error);
+            });
     });
 });
