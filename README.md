@@ -1,4 +1,4 @@
-# Certificate Policy for Internal PKI
+# Web Interface for QUBIP PKI
 
 ## 1. Introduction
 This document defines the policies and procedures for the issuance, management, and revocation of certificates within the internal Public Key Infrastructure (PKI) used for QUBIP. The PKI consists of a **Root Certificate Authority (Root CA)**, two **Intermediate Certificate Authorities (Intermediate CAs)**, and End-Entity certificates for users, servers, and services.
