@@ -236,8 +236,6 @@ def view_ca_crl(ca):
 
 @app.route('/')
 def home():
-    result = subprocess.run([openssl, 'version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logging.debug(f"OpenSSL Version: {result.stdout.decode()}")
     return render_template('home.html')
 
 if __name__ == '__main__':
