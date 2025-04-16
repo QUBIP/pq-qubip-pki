@@ -25,16 +25,16 @@
                 <option value="mldsa44_ed25519">MLDSA44-ED25519</option>
                 <option value="mldsa65_ed25519">MLDSA65-ED25519</option>
             </select>
-            {% if purpose != "code-signing" %}
+
             <label for="commonName">Common Name</label>
             <p>The Common Name (CN) serves as the primary identifier for the certificate holder. It can be either an IP
-                address or an FQDN.</p>
+                address or a Fully Qualified Domain Name (FQDN).</p>
             <div class="cn-container">
                 <!-- FQDN -->
                 <div class="cn-option">
                     <label for="fqdnCheckbox">FQDN</label>
                     <input type="checkbox" class="fqdn-checkbox" name="cn_type" value="fqdn">
-                    <input type="text" class="fqdn-input" name="fqdn" placeholder="Enter FQDN" style="display: none;">
+                    <input type="text" class="fqdn-input" name="fqdn" placeholder="Enter FQDN (e.g.: example.com)" style="display: none;">
                     <span class="error-message fqdn-error"></span>
                 </div>
 
@@ -42,11 +42,25 @@
                 <div class="cn-option">
                     <label for="ipCheckbox">IP Address</label>
                     <input type="checkbox" class="ip-checkbox" name="cn_type" value="ip">
-                    <input type="text" class="ip-input" name="ip" placeholder="Enter IP Address" style="display: none;">
+                    <input type="text" class="ip-input" name="ip" placeholder="Enter IP Address (e.g.: 192.168.0.1)" style="display: none;">
                     <span class="error-message ip-error"></span>
                 </div>
             </div>
-            {% endif %}
+            <!-- <label for="iotDevice">IoT Device</label> -->
+            <p>For which IoT device do you need the certificate?</p>
+            <div class="iot-container">
+                <!-- MPU -->
+                <div class="iot-option">
+                    <label for="mpuCheckbox">MPU</label>
+                    <input type="checkbox"class="mpu-checkbox" id="mpuCheckbox" name="iot_type" value="mpu">
+                    <span class="error-message" id="iotCheckboxError"></span>
+                </div>
+                <!-- MCU -->
+                <div class="iot-option">
+                    <label for="mcuCheckbox">MCU</label>
+                    <input type="checkbox" class="mcu-checkbox" id="mcuCheckbox" name="iot_type" value="ip">
+                </div>
+            </div>
             <button id="submitButton" type="submit">Generate Private Key and Certificate</button>
         </form>
         <div id="certificate-actions" style="display: none;">

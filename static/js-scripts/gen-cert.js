@@ -15,6 +15,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const ipInputs = document.querySelectorAll(".ip-input");
     const fqdnErrors = document.querySelectorAll(".fqdn-error");
     const ipErrors = document.querySelectorAll(".ip-error");
+    const mpuCheckbox = document.getElementById("mpuCheckbox");
+    const mcuCheckbox = document.getElementById("mcuCheckbox");
+    const iotCheckboxError = document.getElementById("iotCheckboxError");
 
     // Create success message element
     const successMessage = document.createElement("p");
@@ -40,6 +43,9 @@ document.addEventListener("DOMContentLoaded", function () {
             input.style.display = "none";
             input.value = "";
         });
+        mpuCheckbox.checked = false;
+        mcuCheckbox.checked = false;
+        iotCheckboxError.textContent = "";
     }
     resetCheckboxes();
     function updateInputVisibility(event) {
@@ -82,6 +88,19 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
     }
+    // Add event listeners to checkboxes
+    mpuCheckbox.addEventListener("change", function () {
+        if (this.checked) {
+            mcuCheckbox.checked = false; // Uncheck mcuCheckbox if mpuCheckbox is checked
+        }
+    }
+    );
+    mcuCheckbox.addEventListener("change", function () {
+        if (this.checked) {
+            mpuCheckbox.checked = false; // Uncheck mpuCheckbox if mcuCheckbox is checked
+        }
+    }
+    );
     fqdnCheckboxes.forEach(checkbox => checkbox.addEventListener("change", updateInputVisibility));
     ipCheckboxes.forEach(checkbox => checkbox.addEventListener("change", updateInputVisibility));
 
@@ -89,12 +108,14 @@ document.addEventListener("DOMContentLoaded", function () {
         let isValid = true;
         let cnType = null;
         let commonName = null;
+        let device = null;
 
         const ipPattern = /^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$/;
         const fqdnPattern = /^(?!:\/\/)([a-zA-Z0-9-_]{1,63}\.)+[a-zA-Z]{2,6}$/;
-
+        let atLeastOneChecked = false;
         fqdnCheckboxes.forEach((checkbox, index) => {
             if (checkbox.checked) {
+                atLeastOneChecked = true;
                 const input = fqdnInputs[index];
                 const error = fqdnErrors[index];
                 if (!fqdnPattern.test(input.value.trim())) {
@@ -110,6 +131,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         ipCheckboxes.forEach((checkbox, index) => {
             if (checkbox.checked) {
+                atLeastOneChecked = true;
                 const input = ipInputs[index];
                 const error = ipErrors[index];
 
@@ -123,34 +145,46 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         });
+        if (!atLeastOneChecked) {
+            alert("Please select at least one FQDN or IP address.");
+            isValid = false;
+        }
+        if (!mpuCheckbox.checked && !mcuCheckbox.checked) {
+            iotCheckboxError.textContent = "Please select either MPU or MCU.";
+            isValid = false;
+        }
+        else {
+            iotCheckboxError.textContent = "";
+            if (mpuCheckbox.checked) {
+                device = "mpu";
+            }
+            else if (mcuCheckbox.checked) {
+                device = "mcu";
+            }
+        }
 
-        return { isValid, cnType, commonName };
+        return { isValid, cnType, commonName, device };
     }
     form = document.getElementById("certForm");
     form.addEventListener("submit", function (event) {
         event.preventDefault();
         // Simulate certificate generation
-        form.style.display = "none";
         let algorithm = document.getElementById('key_algorithm').value;
         let commonName = null;
         let cnType = null;
-        if (purpose === "code-signing") {
-            commonName = "";
-            cnType = "";
-        } else {
-            // tls-server or tls-client
-
-            const validation = validateInput();
-            if (!validation.isValid) return;
-            // console.log('Form submitted');
-            commonName = validation.commonName;
-            cnType = validation.cnType;
-        }
+        
+        const validation = validateInput();
+        if (!validation.isValid) return;
+        form.style.display = "none";
+        commonName = validation.commonName;
+        cnType = validation.cnType;
+        device = validation.device;
         const data = {
             common_name: commonName,
             algorithm: algorithm,
             purpose: purpose,
-            cn_type: cnType
+            cn_type: cnType,
+            device: device
         };
         console.log(data);
         fetch(`/generate_certificate/${purpose}`, {

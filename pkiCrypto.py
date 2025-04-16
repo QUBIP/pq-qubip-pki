@@ -11,7 +11,7 @@ import pprint
 classical_algorithms = ['rsa2048', 'rsa4096', 'ed25519']
 
 pq_algorithms = ['mldsa44', 'mldsa65', 'mldsa87', 'mldsa44_ed25519', 'mldsa65_ed25519']
-cas = ['qubip-root-ca', 'qubip-software-ca', 'qubip-tls-ca']
+cas = ['qubip-root-ca', 'qubip-mcu-ca', 'qubip-mpu-ca']
 
 def generate_private_key(openssl, key_file, algorithm):
     if algorithm in classical_algorithms:
@@ -45,7 +45,7 @@ def generate_private_key(openssl, key_file, algorithm):
 def generate_csr(openssl, private_key, csr_filename, subject, conf, commonName, subjectAltName, cn_type):
     env = os.environ
     if subjectAltName != "":  
-        # tls-server or tls-client
+        # server or client
         logging.info(f"SAN = {subjectAltName}")
         env["SAN"] = subjectAltName
         logging.info(env["SAN"])
@@ -53,9 +53,6 @@ def generate_csr(openssl, private_key, csr_filename, subject, conf, commonName, 
             reqexts = "fqdn_ext"
         elif cn_type == "ip":
             reqexts = "ip_ext"
-    else:
-        # codesign
-        reqexts = "codesign_reqext"
     logging.info(reqexts)
     try:
         subprocess.run([
@@ -71,12 +68,10 @@ def generate_csr(openssl, private_key, csr_filename, subject, conf, commonName, 
         sys.exit(1)
 
 def sign_certificate(openssl, csr_file, crt_file, purpose, ca_key, ca_passfile, ca_cert, ca_conf):
-    if purpose == 'tls-server':
+    if purpose == 'server':
         ext = 'server_ext'
-    elif purpose == 'tls-client':
+    elif purpose == 'client':
         ext = 'client_ext'
-    elif purpose == 'code-signing':
-        ext = 'codesign_ext'
     try:
         subprocess.run([
             openssl, "ca",

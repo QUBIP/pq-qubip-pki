@@ -15,9 +15,8 @@
         <h2>Generate Private Key and certificate</h2>
         <p>What is your certificate purpose?</p>
         <div class="button-container">
-            <a href="{{ url_for('generate_certificate', purpose='tls-server') }}" class="button purpose">TLS Server</a>
-            <a href="{{ url_for('generate_certificate', purpose='tls-client') }}" class="button purpose">TLS Client</a>
-            <a href="{{ url_for('generate_certificate', purpose='code-signing') }}" class="button purpose">Code Signing</a>
+            <a href="{{ url_for('generate_certificate', purpose='server') }}" class="button purpose">Server</a>
+            <a href="{{ url_for('generate_certificate', purpose='client') }}" class="button purpose">Client</a>
         </div>
         <h2>Certificate Authorities and CRLs</h2>
         <p>Here you can retrieve the information about Certificate Authorities and Certificate Revocation Lists</p>
@@ -37,31 +36,31 @@
         </div>
         <hr></hr>
         <div class="ca-section">
-            <strong>QUBIP TLS CA</strong>
+            <strong>QUBIP MPU CA</strong>
             <div class="button-container">
                         
-                <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-tls-ca">Download certificate</a>
-                <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-tls-ca">Download CRL</a>
+                <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-mpu-ca">Download certificate</a>
+                <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-mpu-ca">Download CRL</a>
             </div>
             <div class="divider"></div>
             <div class="button-container">
-                <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-tls-ca">View certificate</a>
-                <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-tls-ca">View CRL</a>
+                <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-mpu-ca">View certificate</a>
+                <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-mpu-ca">View CRL</a>
 
             </div>
         </div>
         <hr></hr>
         <div class="ca-section">
-            <strong>QUBIP Software CA</strong>
+            <strong>QUBIP MCU CA</strong>
             <div class="button-container">
                         
-                <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-software-ca">Download certificate</a>
-                <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-software-ca">Download CRL</a>
+                <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-mcu-ca">Download certificate</a>
+                <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-mcu-ca">Download CRL</a>
             </div>
             <div class="divider"></div>
             <div class="button-container">
-                <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-software-ca">View certificate</a>
-                <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-software-ca">View CRL</a>
+                <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-mcu-ca">View certificate</a>
+                <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-mcu-ca">View CRL</a>
 
             </div>
         </div>

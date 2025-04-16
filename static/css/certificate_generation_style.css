@@ -103,7 +103,23 @@ button:hover {
     /* Space between rows */
 }
 
+.iot-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* Space between rows */
+}
+
 .cn-option {
+    display: flex;
+    align-items: center;
+    /* Align checkbox, label, and input */
+    gap: 10px;
+    /* Space between elements */
+    padding: 5px;
+}
+
+.iot-option {
     display: flex;
     align-items: center;
     /* Align checkbox, label, and input */

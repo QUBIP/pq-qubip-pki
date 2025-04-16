@@ -35,33 +35,37 @@ def generate_certificate(purpose):
     if request.method == 'POST':
         try:
             data = request.json or request.form
-            if purpose == 'tls-server' or purpose == 'tls-client':
-                ca = app.config['TLS_CA']
-                ca_certs_dir = app.config['TLS_CERTS_DIR']
-                ca_conf = app.config['TLS_CA_CONF']
-                ca_key_file = app.config['TLS_CA_KEY']
-                ca_passfile = app.config['TLS_CA_PASSWORD']
-                ca_cert = app.config['TLS_CA_CERT']
-                ca_chain = app.config['TLS_CA_CHAIN']
-                if purpose == 'tls-server':
-                    conf_file = app.config['TLS_SERVER_CONF']
+            device = data.get('device')
+            if device == 'mpu':
+                ca = app.config['MPU_CA']
+                ca_certs_dir = app.config['MPU_CERTS_DIR']
+                ca_conf = app.config['MPU_CA_CONF']
+                ca_key_file = app.config['MPU_CA_KEY']
+                ca_passfile = app.config['MPU_CA_PASSWORD']
+                ca_cert = app.config['MPU_CA_CERT']
+                ca_chain = app.config['MPU_CA_CHAIN']
+                if purpose == 'server':
+                    conf_file = app.config['SERVER_CONF']
                 else:
-                    conf_file = app.config['TLS_CLIENT_CONF']
-            elif purpose == 'code-signing':
-                ca = app.config['SOFTWARE_CA']
-                ca_certs_dir = app.config['SOFTWARE_CERTS_DIR']
-                ca_conf = app.config['SOFTWARE_CA_CONF']
-                ca_key_file = app.config['SOFTWARE_CA_KEY']
-                ca_passfile = app.config['SOFTWARE_CA_PASSWORD']
-                ca_cert = app.config['SOFTWARE_CA_CERT']
-                conf_file = app.config['CODESIGN_CONF']
-                ca_chain = app.config['SOFTWARE_CA_CHAIN']
+                    conf_file = app.config['CLIENT_CONF']
+            elif device == 'mcu':
+                ca = app.config['MCU_CA']
+                ca_certs_dir = app.config['MCU_CERTS_DIR']
+                ca_conf = app.config['MCU_CA_CONF']
+                ca_key_file = app.config['MCU_CA_KEY']
+                ca_passfile = app.config['MCU_CA_PASSWORD']
+                ca_cert = app.config['MCU_CA_CERT']
+                ca_chain = app.config['MCU_CA_CHAIN']
+                if purpose == 'server':
+                    conf_file = app.config['SERVER_CONF']
+                else:
+                    conf_file = app.config['CLIENT_CONF']
             logging.info(data)
             algorithm = data.get('algorithm') 
             logging.debug(f"Using algorithm: {algorithm}")
 
             commonName = data.get('common_name')
-            cn_type = data.get('cn_type') # IP/DNS/Email
+            cn_type = data.get('cn_type') # IP/DNS
             cert_id = f'{str(uuid.uuid4().hex[:10 ])}-{purpose}' 
             key_file = os.path.join(ca_certs_dir, f'{cert_id}.key')
 
@@ -75,14 +79,9 @@ def generate_certificate(purpose):
                 with open(key_file, 'r') as key_fp:
                     private_keys[cert_id] = key_fp.read()
                 key_fp.close()
-
-                subjectAltName = ""
-                if purpose != "code-signing":
-                    subjectAltName = commonName
-                    logging.info(f"SAN = {subjectAltName}")
-                    subj = f"/C=EU/O=QUBIP/CN={commonName}"
-                else:
-                    subj = f"/C=EU/O=QUBIP/CN={commonName}/userId={cert_id}"
+                subjectAltName = commonName
+                logging.info(f"SAN = {subjectAltName}")
+                subj = f"/C=EU/O=QUBIP/CN={commonName}"
                 csr_file = os.path.join(ca_certs_dir, f'{cert_id}.csr')
                 generate_csr(openssl, key_file,csr_file, subj, conf_file, commonName, subjectAltName, cn_type)
                 if not csr_file:
@@ -115,10 +114,10 @@ def download_certificate(ca, cert_id):
     filename = f'{cert_id}-cert.pem'
     csr_file = f'{cert_id}.csr'
     chain_filename = f'{cert_id}-chain.pem'
-    if ca == 'qubip-tls-ca':
-        certs_path = app.config['TLS_CERTS_DIR']
-    elif ca == 'qubip-software-ca':
-        certs_path = app.config['SOFTWARE_CERTS_DIR']
+    if ca == 'qubip-mpu-ca':
+        certs_path = app.config['MPU_CERTS_DIR']
+    elif ca == 'qubip-mcu-ca':
+        certs_path = app.config['MCU_CERTS_DIR']
     else:
         return jsonify({'error': 'CA not found'}), 404
 
@@ -163,10 +162,10 @@ def download_certificate(ca, cert_id):
 def download_ca_certificate(ca):
     if ca == 'qubip-root-ca':
         filename = app.config['ROOT_CA_CERT']
-    elif ca == 'qubip-tls-ca':
-        filename = app.config['TLS_CA_CERT']
-    elif ca == 'qubip-software-ca':
-        filename = app.config['SOFTWARE_CA_CERT']
+    elif ca == 'qubip-mpu-ca':
+        filename = app.config['MPU_CA_CERT']
+    elif ca == 'qubip-mcu-ca':
+        filename = app.config['MCU_CA_CERT']
     if not os.path.exists(filename):
         logging.error(f"CA Certificate not found")
         return jsonify({'error': 'Certificate not found'}), 404
@@ -181,10 +180,10 @@ def download_ca_certificate(ca):
 def download_crl(ca):
     if ca == 'qubip-root-ca':
         ca_crl = app.config['ROOT_CA_CRL']
-    elif ca == 'qubip-tls-ca':
-        ca_crl = app.config['TLS_CA_CRL']
-    elif ca == 'qubip-software-ca':
-        ca_crl = app.config['SOFTWARE_CA_CRL']
+    elif ca == 'qubip-mpu-ca':
+        ca_crl = app.config['MPU_CA_CRL']
+    elif ca == 'qubip-mcu-ca':
+        ca_crl = app.config['MCU_CA_CRL']
     if not os.path.exists(ca_crl):
         return jsonify({'error': 'CRL not found'}), 404
     try:
@@ -198,10 +197,10 @@ def view_ca_certificate(ca):
     cert_id = ca
     if ca == 'qubip-root-ca':
         filename = app.config['ROOT_CA_CERT']
-    elif ca == 'qubip-tls-ca':
-        filename = app.config['TLS_CA_CERT']
-    elif ca == 'qubip-software-ca':
-        filename = app.config['SOFTWARE_CA_CERT']
+    elif ca == 'qubip-mpu-ca':
+        filename = app.config['MPU_CA_CERT']
+    elif ca == 'qubip-mcu-ca':
+        filename = app.config['MCU_CA_CERT']
 
     if not os.path.exists(filename):
         return jsonify({'error': 'Certificate not found'}), 404
@@ -220,10 +219,10 @@ def view_ca_crl(ca):
     cert_id = ca
     if ca == 'qubip-root-ca':
         filename = app.config['ROOT_CA_CRL']
-    elif ca == 'qubip-tls-ca':
-        filename = app.config['TLS_CA_CRL']
-    elif ca == 'qubip-software-ca':
-        filename = app.config['SOFTWARE_CA_CRL']
+    elif ca == 'qubip-mpu-ca':
+        filename = app.config['MPU_CA_CRL']
+    elif ca == 'qubip-mcu-ca':
+        filename = app.config['MCU_CA_CRL']
 
     logging.info(f"app.py - CRL filename: {filename}")
     if not os.path.exists(filename):
