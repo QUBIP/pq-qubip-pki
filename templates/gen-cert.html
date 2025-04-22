@@ -47,18 +47,23 @@
                 </div>
             </div>
             <!-- <label for="iotDevice">IoT Device</label> -->
-            <p>For which IoT device do you need the certificate?</p>
+            <p>For which purpose do you need the certificate?</p>
             <div class="iot-container">
                 <!-- MPU -->
                 <div class="iot-option">
-                    <label for="mpuCheckbox">MPU</label>
+                    <label for="mpuCheckbox">MPU device</label>
                     <input type="checkbox"class="mpu-checkbox" id="mpuCheckbox" name="iot_type" value="mpu">
                     <span class="error-message" id="iotCheckboxError"></span>
                 </div>
                 <!-- MCU -->
                 <div class="iot-option">
-                    <label for="mcuCheckbox">MCU</label>
+                    <label for="mcuCheckbox">MCU device</label>
                     <input type="checkbox" class="mcu-checkbox" id="mcuCheckbox" name="iot_type" value="ip">
+                </div>
+                <!-- TLS -->
+                <div class="iot-option">
+                    <label for="tlsCheckbox">TLS endpoint</label>
+                    <input type="checkbox" class="tls-checkbox" id="tlsCheckbox" name="iot_type" value="ip">
                 </div>
             </div>
             <button id="submitButton" type="submit">Generate Private Key and Certificate</button>

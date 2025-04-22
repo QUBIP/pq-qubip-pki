@@ -1,70 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PKI Certificate Manager</title>
     <link rel="stylesheet" href="/static/css/home_style.css">
 </head>
+
 <body>
 
 
     <div class="container">
         <h1>Welcome to the QUBIP PKI!</h1>
-        <p>This interface allows you to receive x509 post-quantum certificates issued by the QUBIP PKI. You can generate a post-quantum certificate and view the CA certificates and CRLs of the PKI.</p>
+        <p>This interface allows you to receive x509 post-quantum certificates issued by the QUBIP PKI. You can generate
+            a post-quantum certificate and view the CA certificates and CRLs of the PKI.</p>
         <h2>Generate Private Key and certificate</h2>
-        <p>What is your certificate purpose?</p>
+        <p>Please select the chain from which you want a certificate</p>
         <div class="button-container">
-            <a href="{{ url_for('generate_certificate', purpose='server') }}" class="button purpose">Server</a>
-            <a href="{{ url_for('generate_certificate', purpose='client') }}" class="button purpose">Client</a>
+            <a href="{{ url_for('generate_certificate', chain='mpu') }}" class="button chain">MPU</a>
+            <a href="{{ url_for('generate_certificate', chain='mcu') }}" class="button chain">MCU</a>
         </div>
-        <h2>Certificate Authorities and CRLs</h2>
-        <p>Here you can retrieve the information about Certificate Authorities and Certificate Revocation Lists</p>
-        <div class="ca-section">
-        <strong>QUBIP Root CA</strong>
-        <div class="button-container">
-            
-            <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-root-ca">Download certificate</a>
-            <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-root-ca">Download CRL</a>
-        </div>
-        <div class="divider"></div>
-        <div class="button-container">
-            <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-root-ca">View certificate</a>
-            <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-root-ca">View CRL</a>
+        <h2>PKI Chains</h2>
+        <p>Here you can retrieve the information about the different chains with Certificate Authorities and Certificate
+            Revocation Lists</p>
+        <div class="chains-container">
+            <div class="chain-wrapper">
 
-        </div>
-        </div>
-        <hr></hr>
-        <div class="ca-section">
-            <strong>QUBIP MPU CA</strong>
+
+                <div class="chain-section">
+                    <h2 class="chain-h2"> QUBIP MPU chain</h2>
+                    <p>The QUBIP MPU chain is used to sign end-entity certificates for the MPU device, using
+                        MLDSA65/ED25519
+                        composite algorithm. It is used to secure the communication between the MPU and the MCU.</p>
+                </div>
+
+                <div class="ca-section">
+                    <strong>Root CA</strong>
+                    <p>The Root CA is the root of trust for PKI. It is used to sign the intermediate CAs and is not
+                        intended
+                        to be used for end-entity certificates.</p>
+                    <div class="button-container">
+
+                        <a href="#" class="button cert-button download-ca-cert-btn" chain-name="pki-65"
+                            cert-name="qubip-root-ca">Download certificate</a>
+                        <a href="#" class="button crl-button download-crl-btn" chain-name="pki-65"
+                            crl-name="qubip-root-ca">Download CRL</a>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="button-container">
+                        <a href="#" class="button cert-button view-ca-cert-btn" chain-name="pki-65"
+                            cert-name="qubip-root-ca">View certificate</a>
+                        <a href="#" class="button crl-button view-crl-btn" chain-name="pki-65"
+                            crl-name="qubip-root-ca">View
+                            CRL</a>
+
+                    </div>
+                </div>
+                <div class="ca-section">
+                    <strong>MPU intermediate CA</strong>
+                    <p>The QUBIP MPU CA is used to sign end-entity certificates for the MPU device.</p>
+                    <div class="button-container">
+
+                        <a href="#" class="button cert-button download-ca-cert-btn" chain-name="pki-65"
+                            cert-name="qubip-mpu-ca">Download certificate</a>
+                        <a href="#" class="button crl-button download-crl-btn" chain-name="pki-65"
+                            crl-name="qubip-mpu-ca">Download CRL</a>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="button-container">
+                        <a href="#" class="button cert-button view-ca-cert-btn" chain-name="pki-65"
+                            cert-name="qubip-mpu-ca">View certificate</a>
+                        <a href="#" class="button crl-button view-crl-btn" chain-name="pki-65"
+                            crl-name="qubip-mpu-ca">View
+                            CRL</a>
+
+                    </div>
+                </div>
+            </div>
+            <div class="chain-wrapper">
+                <div class="chain-section">
+                    <h2 class="chain-h2"> QUBIP MCU chain</h2>
+                    <p>The QUBIP MCU chain is used to sign end-entity certificates for the MCU device, using
+                        MLDSA44/ED25519
+                        composite algorithm. It is used to secure the communication between the MPU and the MCU.</p>
+                </div>
+
+                <div class="ca-section">
+                    <strong>Root CA</strong>
+                    <p>The Root CA is the root of trust for PKI. It is used to sign the intermediate CAs and is not
+                        intended
+                        to
+                        be used for end-entity certificates.</p>
+                    <div class="button-container">
+
+                        <a href="#" class="button cert-button download-ca-cert-btn" chain-name="pki-44"
+                            cert-name="qubip-root-ca">Download certificate</a>
+                        <a href="#" class="button crl-button download-crl-btn" chain-name="pki-44"
+                            crl-name="qubip-root-ca">Download CRL</a>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="button-container">
+                        <a href="#" class="button cert-button view-ca-cert-btn" chain-name="pki-44"
+                            cert-name="qubip-root-ca">View certificate</a>
+                        <a href="#" class="button crl-button view-crl-btn" chain-name="pki-44"
+                            crl-name="qubip-root-ca">View
+                            CRL</a>
+
+                    </div>
+                </div>
+                <div class="ca-section">
+                    <strong>MCU intermediate CA</strong>
+                    <p>The QUBIP MCU CA is used to sign end-entity certificates for the MCU device.</p>
+                    <div class="button-container">
+
+                        <a href="#" class="button cert-button download-ca-cert-btn" chain-name="pki-44"
+                            cert-name="qubip-mcu-ca">Download certificate</a>
+                        <a href="#" class="button crl-button download-crl-btn" chain-name="pki-44"
+                            crl-name="qubip-mcu-ca">Download CRL</a>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="button-container">
+                        <a href="#" class="button cert-button view-ca-cert-btn" chain-name="pki-44"
+                            cert-name="qubip-mcu-ca">View certificate</a>
+                        <a href="#" class="button crl-button view-crl-btn" chain-name="pki-44"
+                            crl-name="qubip-mcu-ca">View
+                            CRL</a>
+
+                    </div>
+                </div>
+            </div>
+            <!-- <div class="ca-section">
+            <strong>QUBIP TLS CA</strong>
+            <p>The QUBIP TLS CA is used to sign end-entity certificates for TLS. It is used to secure the communication between endpoints in pilot 2.</p>
             <div class="button-container">
                         
-                <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-mpu-ca">Download certificate</a>
-                <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-mpu-ca">Download CRL</a>
+                <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-tls-ca">Download certificate</a>
+                <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-tls-ca">Download CRL</a>
             </div>
             <div class="divider"></div>
             <div class="button-container">
-                <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-mpu-ca">View certificate</a>
-                <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-mpu-ca">View CRL</a>
+                <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-tls-ca">View certificate</a>
+                <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-tls-ca">View CRL</a>
 
             </div>
-        </div>
-        <hr></hr>
-        <div class="ca-section">
-            <strong>QUBIP MCU CA</strong>
-            <div class="button-container">
-                        
-                <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-mcu-ca">Download certificate</a>
-                <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-mcu-ca">Download CRL</a>
-            </div>
-            <div class="divider"></div>
-            <div class="button-container">
-                <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-mcu-ca">View certificate</a>
-                <a href="#" class="button crl-button view-crl-btn" crl-name="qubip-mcu-ca">View CRL</a>
+        </div> -->
 
-            </div>
         </div>
     </div>
     <script src="/static/js-scripts/script.js"></script>
 </body>
+
 </html>

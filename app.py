@@ -28,8 +28,8 @@ Config.validate()
 private_keys = {}  # Store private keys in memory
 openssl = app.config['OPENSSL']
 
-@app.route('/generate_certificate/<purpose>', methods=['GET','POST'])
-def generate_certificate(purpose):
+@app.route('/generate_certificate/<chain>', methods=['GET','POST'])
+def generate_certificate(chain):
     if request.method == 'GET':
         return render_template('gen-cert.html', purpose=purpose)
     if request.method == 'POST':
@@ -56,6 +56,18 @@ def generate_certificate(purpose):
                 ca_passfile = app.config['MCU_CA_PASSWORD']
                 ca_cert = app.config['MCU_CA_CERT']
                 ca_chain = app.config['MCU_CA_CHAIN']
+                if purpose == 'server':
+                    conf_file = app.config['SERVER_CONF']
+                else:
+                    conf_file = app.config['CLIENT_CONF']
+            elif device == 'tls':
+                ca = app.config['TLS_CA']
+                ca_certs_dir = app.config['TLS_CERTS_DIR']
+                ca_conf = app.config['TLS_CA_CONF']
+                ca_key_file = app.config['TLS_CA_KEY']
+                ca_passfile = app.config['TLS_CA_PASSWORD']
+                ca_cert = app.config['TLS_CA_CERT']
+                ca_chain = app.config['TLS_CA_CHAIN']
                 if purpose == 'server':
                     conf_file = app.config['SERVER_CONF']
                 else:
@@ -118,6 +130,8 @@ def download_certificate(ca, cert_id):
         certs_path = app.config['MPU_CERTS_DIR']
     elif ca == 'qubip-mcu-ca':
         certs_path = app.config['MCU_CERTS_DIR']
+    elif ca == 'qubip-tls-ca':
+        certs_path = app.config['TLS_CERTS_DIR']
     else:
         return jsonify({'error': 'CA not found'}), 404
 
@@ -158,14 +172,22 @@ def download_certificate(ca, cert_id):
         logging.error("app.py - Certificate not found: %s", filename)
         return jsonify({'error': 'File not found'}), 404
 
-@app.route('/download_ca_certificate/<ca>', methods=['GET'])
-def download_ca_certificate(ca):
+@app.route('/<chain>/<ca>/certificate', methods=['GET'])
+def download_ca_certificate(chain, ca):
+    if chain == 'certs':
+        certs_path = app.config['CERTS_DIR']
+    elif chain == 'pki-65':
+        certs_path = app.config['PKI65_DIR']
+    elif chain == 'pki-44':
+        certs_path = app.config['PKI44_DIR']
     if ca == 'qubip-root-ca':
-        filename = app.config['ROOT_CA_CERT']
+        filename = os.path.join(certs_path, app.config['ROOT_CA'],'qubip-root-ca-cert.pem')
     elif ca == 'qubip-mpu-ca':
-        filename = app.config['MPU_CA_CERT']
+        filename = os.path.join(certs_path, app.config['MPU_CA'],'qubip-mpu-ca-cert.pem')
     elif ca == 'qubip-mcu-ca':
-        filename = app.config['MCU_CA_CERT']
+        filename = os.path.join(certs_path, app.config['MCU_CA'],'qubip-mcu-ca-cert.pem')
+    elif ca == 'qubip-tls-ca':
+        filename = app.config['TLS_CA_CERT']
     if not os.path.exists(filename):
         logging.error(f"CA Certificate not found")
         return jsonify({'error': 'Certificate not found'}), 404
@@ -184,6 +206,8 @@ def download_crl(ca):
         ca_crl = app.config['MPU_CA_CRL']
     elif ca == 'qubip-mcu-ca':
         ca_crl = app.config['MCU_CA_CRL']
+    elif ca == 'qubip-tls-ca':
+        ca_crl = app.config['TLS_CA_CRL']
     if not os.path.exists(ca_crl):
         return jsonify({'error': 'CRL not found'}), 404
     try:
@@ -192,15 +216,24 @@ def download_crl(ca):
         logging.error("app.py - CRL not found: %s", ca_crl)
         return jsonify({'error': 'File not found'}), 404
 
-@app.route('/certificate_details/<ca>/ca_certificate', methods=['GET'])
-def view_ca_certificate(ca):
+@app.route('/certificate_details/<chain>/<ca>/ca_certificate', methods=['GET'])
+def view_ca_certificate(chain, ca):
+    if chain == 'certs':
+        certs_path = app.config['CERTS_DIR']
+    elif chain == 'pki-65':
+        certs_path = app.config['PKI65_DIR']
+    elif chain == 'pki-44':
+        certs_path = app.config['PKI44_DIR']
+    
     cert_id = ca
     if ca == 'qubip-root-ca':
-        filename = app.config['ROOT_CA_CERT']
+        filename = os.path.join(certs_path, app.config['ROOT_CA'],'qubip-root-ca-cert.pem')
     elif ca == 'qubip-mpu-ca':
-        filename = app.config['MPU_CA_CERT']
+        filename = os.path.join(certs_path, app.config['MPU_CA'],'qubip-mpu-ca-cert.pem')
     elif ca == 'qubip-mcu-ca':
-        filename = app.config['MCU_CA_CERT']
+        filename = os.path.join(certs_path, app.config['MCU_CA'],'qubip-mcu-ca-cert.pem')
+    elif ca == 'qubip-tls-ca':
+        filename = os.path.join(certs_path, app.config['TLS_CA'],'qubip-tls-ca-cert.pem')
 
     if not os.path.exists(filename):
         return jsonify({'error': 'Certificate not found'}), 404
@@ -223,6 +256,8 @@ def view_ca_crl(ca):
         filename = app.config['MPU_CA_CRL']
     elif ca == 'qubip-mcu-ca':
         filename = app.config['MCU_CA_CRL']
+    elif ca == 'qubip-tls-ca':
+        filename = app.config['TLS_CA_CRL']
 
     logging.info(f"app.py - CRL filename: {filename}")
     if not os.path.exists(filename):
@@ -238,4 +273,4 @@ def home():
     return render_template('home.html')
 
 if __name__ == '__main__':
-    app.run(host='130.192.1.31', ssl_context=('server-chain.pem', 'server.key'))
+    app.run(host='130.192.1.31', debug=True, port=5000)

@@ -12,6 +12,7 @@ classical_algorithms = ['rsa2048', 'rsa4096', 'ed25519']
 
 pq_algorithms = ['mldsa44', 'mldsa65', 'mldsa87', 'mldsa44_ed25519', 'mldsa65_ed25519']
 cas = ['qubip-root-ca', 'qubip-mcu-ca', 'qubip-mpu-ca']
+chains = ['certs', 'pki-65', 'pki-44']
 
 def generate_private_key(openssl, key_file, algorithm):
     if algorithm in classical_algorithms:
