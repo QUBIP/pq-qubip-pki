@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const certContent = document.getElementById("certificate-content");
     const certText = document.getElementById("certText");
 
-    // Common Name fields (Handles both tls-server and tls-client)
+    // Common Name fields
     const fqdnCheckboxes = document.querySelectorAll(".fqdn-checkbox");
     const ipCheckboxes = document.querySelectorAll(".ip-checkbox");
     const fqdnInputs = document.querySelectorAll(".fqdn-input");
@@ -24,7 +24,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const iotCheckboxError = document.getElementById("iotCheckboxError");
     const tlsCheckbox = document.getElementById("tlsCheckbox");
 
-    // Create success message element
     const successMessage = document.createElement("p");
     successMessage.id = "success-message";
     successMessage.style.display = "none";
@@ -33,8 +32,6 @@ document.addEventListener("DOMContentLoaded", function () {
     successMessage.textContent = "Certificate generated successfully!";
     certForm.parentNode.insertBefore(successMessage, certActions);
 
-
-    // Reset checkboxes and inputs on page load
     function resetCheckboxes() {
         fqdnCheckboxes.forEach(checkbox => checkbox.checked = false);
         ipCheckboxes.forEach(checkbox => checkbox.checked = false);
@@ -53,14 +50,15 @@ document.addEventListener("DOMContentLoaded", function () {
         tlsCheckbox.checked = false;
         iotCheckboxError.textContent = "";
     }
+
     resetCheckboxes();
+
     function updateInputVisibility(event) {
         const target = event.target;
         if (target.classList.contains("fqdn-checkbox")) {
-
             fqdnCheckboxes.forEach((checkbox, index) => {
                 if (checkbox.checked) {
-                    ipCheckboxes[index].checked = false; // Uncheck IP if FQDN is checked
+                    ipCheckboxes[index].checked = false;
                     fqdnInputs[index].style.display = "inline-block";
                     ipInputs[index].style.display = "none";
                     ipInputs[index].value = "";
@@ -75,16 +73,14 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
         if (target.classList.contains("ip-checkbox")) {
-
             ipCheckboxes.forEach((checkbox, index) => {
                 if (checkbox.checked) {
-                    fqdnCheckboxes[index].checked = false; // Uncheck FQDN if IP is checked
+                    fqdnCheckboxes[index].checked = false;
                     ipInputs[index].style.display = "inline-block";
                     ipInputs[index].required = true;
                     fqdnInputs[index].style.display = "none";
                     fqdnInputs[index].value = "";
                     fqdnErrors[index].textContent = "";
-
                 } else {
                     ipInputs[index].style.display = "none";
                     ipInputs[index].value = "";
@@ -94,28 +90,29 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
     }
-    // Add event listeners to checkboxes
+
     mpuCheckbox.addEventListener("change", function () {
         if (this.checked) {
-            mcuCheckbox.checked = false; // Uncheck mcuCheckbox if mpuCheckbox is checked
-            tlsCheckbox.checked = false; // Uncheck tlsCheckbox if mpuCheckbox is checked
-        }
-    }
-    );
-    mcuCheckbox.addEventListener("change", function () {
-        if (this.checked) {
-            mpuCheckbox.checked = false; // Uncheck mpuCheckbox if mcuCheckbox is checked
-            tlsCheckbox.checked = false; // Uncheck tlsCheckbox if mcuCheckbox is checked
+            mcuCheckbox.checked = false;
+            tlsCheckbox.checked = false;
         }
     });
+
+    mcuCheckbox.addEventListener("change", function () {
+        if (this.checked) {
+            mpuCheckbox.checked = false;
+            tlsCheckbox.checked = false;
+        }
+    });
+
     tlsCheckbox.addEventListener("change", function () {
         if (this.checked) {
-            mpuCheckbox.checked = false; // Uncheck mpuCheckbox if tlsCheckbox is checked
-            mcuCheckbox.checked = false; // Uncheck mcuCheckbox if tlsCheckbox is checked
+            mpuCheckbox.checked = false;
+            mcuCheckbox.checked = false;
             iotCheckboxError.textContent = "";
         }
-    }   
-    );
+    });
+
     fqdnCheckboxes.forEach(checkbox => checkbox.addEventListener("change", updateInputVisibility));
     ipCheckboxes.forEach(checkbox => checkbox.addEventListener("change", updateInputVisibility));
 
@@ -127,31 +124,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const ipPattern = /^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$/;
         const fqdnPattern = /^(?!:\/\/)([a-zA-Z0-9-_]{1,63}\.)+[a-zA-Z]{2,6}$/;
+
         let atLeastOneChecked = false;
+
         fqdnCheckboxes.forEach((checkbox, index) => {
             if (checkbox.checked) {
                 atLeastOneChecked = true;
                 const input = fqdnInputs[index];
                 const error = fqdnErrors[index];
-
-                // do not validate FQDN for now, just check if it is empty
                 if (input.value.trim() === "") {
                     error.textContent = "FQDN cannot be empty.";
                     isValid = false;
-                }
-                else {
+                } else {
                     fqdnErrors[index].textContent = "";
                     cnType = "fqdn";
                     commonName = input.value.trim();
                 }
-                // if (!fqdnPattern.test(input.value.trim())) {
-                //     error.textContent = "Invalid FQDN format.";
-                //     isValid = false;
-                // } else {
-                //     fqdnErrors[index].textContent = "";
-                //     cnType = "fqdn";
-                //     commonName = input.value.trim();
-                // }
             }
         });
 
@@ -160,7 +148,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 atLeastOneChecked = true;
                 const input = ipInputs[index];
                 const error = ipErrors[index];
-
                 if (!ipPattern.test(input.value.trim())) {
                     ipErrors[index].textContent = "Invalid IP address format.";
                     isValid = false;
@@ -171,43 +158,42 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         });
+
         if (!atLeastOneChecked) {
             alert("Please select at least one FQDN or IP address.");
             isValid = false;
         }
+
         if (!mpuCheckbox.checked && !mcuCheckbox.checked && !tlsCheckbox.checked) {
             iotCheckboxError.textContent = "Please select the purpose.";
             isValid = false;
-        }
-        else {
+        } else {
             iotCheckboxError.textContent = "";
-            if (mpuCheckbox.checked) {
-                device = "mpu";
-            }
-            else if (mcuCheckbox.checked) {
-                device = "mcu";
-            }
-            else if (tlsCheckbox.checked) {
-                device = "tls";
-            }
+            if (mpuCheckbox.checked) device = "mpu";
+            else if (mcuCheckbox.checked) device = "mcu";
+            else if (tlsCheckbox.checked) device = "tls";
         }
 
         return { isValid, cnType, commonName, device };
     }
-    form = document.getElementById("certForm");
+
+    const form = document.getElementById("certForm");
+
     form.addEventListener("submit", function (event) {
         event.preventDefault();
-        // Simulate certificate generation
+
         let algorithm = document.getElementById('key_algorithm').value;
         let commonName = null;
         let cnType = null;
-        
+
         const validation = validateInput();
         if (!validation.isValid) return;
+
         form.style.display = "none";
         commonName = validation.commonName;
         cnType = validation.cnType;
         device = validation.device;
+
         const data = {
             common_name: commonName,
             algorithm: algorithm,
@@ -215,8 +201,8 @@ document.addEventListener("DOMContentLoaded", function () {
             cn_type: cnType,
             device: device
         };
-        console.log(data);
-        fetch(`/generate_certificate/${chain}/${purpose}`, {
+        console.log("Data to be sent:", data);
+        fetch(`/generate_certificate/${purpose}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -231,45 +217,47 @@ document.addEventListener("DOMContentLoaded", function () {
                 certActions.style.display = "flex";
                 latestCertInfo = {
                     ca: data.ca,
-                    certificate_id: data.certificate_id
+                    certificate_id: data.certificate_id,
+                    pki: data.pki
                 };
-                certificateDownloaded = false; // Reset the flag when a new certificate is generated
-                console.log(certificateDownloaded)
-                downloadBtn.addEventListener("click", function () {
-                    if (certificateDownloaded) {
-                        console.log("Certificate already downloaded. Cannot download again.");
-                        alert("The private key has been deleted for security reasons. Please generate another certificate if you need it.");
-                        return; // Prevent further execution
-                    }
-                    
-                    // Show a confirmation popup before downloading
-                    const userConfirmed = confirm("Warning: This certificate and private key can only be downloaded ONCE. After that, the private key will be deleted from the server. Do you want to proceed?");
-                    
-                    if (!userConfirmed) return; // Stop if the user cancels
-                    fetch(`/download_certificate/${data.ca}/${data.certificate_id}`, { method: 'GET' })
-                    .then(response => {
-                        if (!response.ok) throw new Error('Failed to download certificate');
-                        return response.blob();
-                    })
-                    .then(blob => {
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = `${data.certificate_id}.zip`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        console.log("Certificate downloaded successfully");
-                        certificateDownloaded = true; // Set the flag to true after successful download
-                        })
-                        .catch(error => {
-                            console.error("Error downloading certificate:", error);
-                            alert("Error: Failed to download key. It may have already been deleted.");
-                        });
-                }); // end event download
-
+                certificateDownloaded = false;
             })
             .catch(error => {
                 console.error("Error generating the certificate: ", error);
+            });
+    });
+
+    downloadBtn.addEventListener("click", function () {
+        if (certificateDownloaded) {
+            alert("The private key has been deleted for security reasons. Please generate another certificate if you need it.");
+            return;
+        }
+
+        const userConfirmed = confirm("Warning: This certificate and private key can only be downloaded ONCE. After that, the private key will be deleted from the server. Do you want to proceed?");
+        if (!userConfirmed) return;
+
+        if (!latestCertInfo) {
+            alert("No certificate available to download.");
+            return;
+        }
+        //console.log(latestCertInfo)
+
+        fetch(`/download_certificate/${latestCertInfo.pki}/${latestCertInfo.ca}/${latestCertInfo.certificate_id}`, { method: 'GET' })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to download certificate');
+                return response.blob();
+            })
+            .then(blob => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `${latestCertInfo.certificate_id}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                certificateDownloaded = true;
+            })
+            .catch(error => {
+                console.error("Error downloading certificate:", error);
             });
     });
 });

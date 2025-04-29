@@ -16,3 +16,6 @@ etc
 certs
 *.wsgi
 etc
+wsgi.py 
+.env.*
+config.py

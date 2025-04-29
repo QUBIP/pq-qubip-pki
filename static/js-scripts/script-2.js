@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
             event.preventDefault();
             const chainName = this.getAttribute("chain-name");
             const certName = this.getAttribute("cert-name");
-            //console.log(`Downloading certificate: ${certName}`);
+            ////console.log(`Downloading certificate: ${certName}`);
             window.location.href = `/${chainName}/${certName}/certificate`;
         });
     });
@@ -15,10 +15,10 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".view-ca-cert-btn").forEach(button => {
         button.addEventListener("click", function (event) {
             event.preventDefault();
-            //console.log("view ca cert button clicked");
+            ////console.log("view ca cert button clicked");
             const chainName = this.getAttribute("chain-name");
             const certName = this.getAttribute("cert-name");
-            //console.log(`Viewing certificate: ${certName}`);
+            ////console.log(`Viewing certificate: ${certName}`);
             window.location.href = `/certificate_details/${chainName}/${certName}/ca_certificate`;
         });
     });
@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
             event.preventDefault();
             const chainName = this.getAttribute("chain-name");
             const crlName = this.getAttribute("crl-name");
-            //console.log(`Downloading CRL: ${crlName}`);
+            ////console.log(`Downloading CRL: ${crlName}`);
             window.location.href = `/download_crl/${chainName}/${crlName}`;
         });
     });
@@ -38,8 +38,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".view-crl-btn").forEach(button => {
         button.addEventListener("click", function () {
             const chainName = this.getAttribute("chain-name");
+            //console.log(chainName)
             const crlName = this.getAttribute("crl-name");
-            //console.log(`Viewing CRL: ${crlName}`);
+            ////console.log(`Viewing CRL: ${crlName}`);
             window.location.href = `/crl_details/${chainName}/${crlName}`;
         });
     });

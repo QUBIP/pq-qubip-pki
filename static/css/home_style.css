@@ -101,16 +101,14 @@ h2 {
 }
 
 .crl-button {
-    background-color: #744896;
+    background-color: #6a00ff;
 }
 .crl-button:hover {
-    background-color: #971fb2;
+    background-color: #0056b3;
 }
 
 .divider{
-    width:5px;
-    height:auto;
-    display:inline-block;
+    top: 200%;
 }
 
 .chains-container {
