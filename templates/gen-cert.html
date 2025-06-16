@@ -10,7 +10,10 @@
 
 <body>
     <div class="container">
-        <h2>Generate {{ purpose }} certificate</h2>
+        <div class="header-row">
+            <h2>Generate {{ purpose }} certificate</h2>
+            <a href="/" class="back-link">Home</a>
+        </div>
         <form id="certForm" method="POST"
             action="{{ url_for('generate_certificate', purpose=request.args.get('purpose', purpose)) }}"
             data-purpose="{{ request.args.get('purpose', purpose) }}">
@@ -34,7 +37,8 @@
                 <div class="cn-option">
                     <label for="fqdnCheckbox">FQDN</label>
                     <input type="checkbox" class="fqdn-checkbox" name="cn_type" value="fqdn">
-                    <input type="text" class="fqdn-input" name="fqdn" placeholder="Enter FQDN (e.g.: example.com)" style="display: none;">
+                    <input type="text" class="fqdn-input" name="fqdn" placeholder="Enter FQDN (e.g.: example.com)"
+                        style="display: none;">
                     <span class="error-message fqdn-error"></span>
                 </div>
 
@@ -42,7 +46,8 @@
                 <div class="cn-option">
                     <label for="ipCheckbox">IP Address</label>
                     <input type="checkbox" class="ip-checkbox" name="cn_type" value="ip">
-                    <input type="text" class="ip-input" name="ip" placeholder="Enter IP Address (e.g.: 192.168.0.1)" style="display: none;">
+                    <input type="text" class="ip-input" name="ip" placeholder="Enter IP Address (e.g.: 192.168.0.1)"
+                        style="display: none;">
                     <span class="error-message ip-error"></span>
                 </div>
             </div>
@@ -52,7 +57,7 @@
                 <!-- MPU -->
                 <div class="iot-option">
                     <label for="mpuCheckbox">MPU device</label>
-                    <input type="checkbox"class="mpu-checkbox" id="mpuCheckbox" name="iot_type" value="mpu">
+                    <input type="checkbox" class="mpu-checkbox" id="mpuCheckbox" name="iot_type" value="mpu">
                     <span class="error-message" id="iotCheckboxError"></span>
                 </div>
                 <!-- MCU -->
@@ -69,13 +74,14 @@
             <button id="submitButton" type="submit">Generate Private Key and Certificate</button>
         </form>
         <div id="certificate-actions" style="display: none;">
+             <div id="loader" class="loader"></div> 
             <a href="#" class="button" id="download-cert-btn">Download Key, Certificate and chain</a>
         </div>
         <div id="certificate-content">
             <pre id="certText"></pre>
         </div>
     </div>
-    <script src="/static/js-scripts/gen-cert-2.js"></script>
+    <script src="/static/js-scripts/gen-cert-4.js"></script>
 </body>
 
 </html>

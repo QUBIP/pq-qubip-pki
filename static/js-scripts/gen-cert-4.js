@@ -32,6 +32,16 @@ document.addEventListener("DOMContentLoaded", function () {
     successMessage.textContent = "Certificate generated successfully!";
     certForm.parentNode.insertBefore(successMessage, certActions);
 
+    function showLoader() {
+        const loader = document.getElementById("loader");
+        loader.style.display = "flex";
+    }
+
+    function hideLoader() {
+        const loader = document.getElementById("loader");
+        loader.style.display = "none";
+    }
+
     function resetCheckboxes() {
         fqdnCheckboxes.forEach(checkbox => checkbox.checked = false);
         ipCheckboxes.forEach(checkbox => checkbox.checked = false);
@@ -182,49 +192,56 @@ document.addEventListener("DOMContentLoaded", function () {
     form.addEventListener("submit", function (event) {
         event.preventDefault();
 
-        let algorithm = document.getElementById('key_algorithm').value;
-        let commonName = null;
-        let cnType = null;
-
+        showLoader();
         const validation = validateInput();
         if (!validation.isValid) return;
 
-        form.style.display = "none";
-        commonName = validation.commonName;
-        cnType = validation.cnType;
-        device = validation.device;
+        setTimeout(() => {
+            form.style.display = "none";
+            const algorithm = document.getElementById('key_algorithm').value;
+            let commonName = null;
+            let cnType = null;
 
-        const data = {
-            common_name: commonName,
-            algorithm: algorithm,
-            purpose: purpose,
-            cn_type: cnType,
-            device: device
-        };
-        console.log("Data to be sent:", data);
-        fetch(`/generate_certificate/${purpose}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        }).then(response => response.json())
-            .then(data => {
-                certActions.style.display = "flex";
-                if (data.certificate) {
-                    certContent.style.display = "block";
-                    certText.textContent = data.certificate;
-                }
-                successMessage.style.display = "block";
-                certActions.style.display = "flex";
-                latestCertInfo = {
-                    ca: data.ca,
-                    certificate_id: data.certificate_id,
-                    pki: data.pki
-                };
-                certificateDownloaded = false;
-            })
-            .catch(error => {
-                console.error("Error generating the certificate: ", error);
-            });
+
+            commonName = validation.commonName;
+            cnType = validation.cnType;
+            device = validation.device;
+            const data = {
+                common_name: commonName,
+                algorithm: algorithm,
+                purpose: purpose,
+                cn_type: cnType,
+                device: device
+            };
+            //console.log("Data to be sent:", data);
+            fetch(`/generate_certificate/${purpose}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(response => response.json())
+                .then(data => {
+                    hideLoader();
+                    certActions.style.display = "flex";
+                    if (data.certificate) {
+                        certContent.style.display = "block";
+                        certText.textContent = data.certificate;
+                    }
+                    successMessage.style.display = "block";
+                    certActions.style.display = "flex";
+                    latestCertInfo = {
+                        ca: data.ca,
+                        certificate_id: data.certificate_id,
+                        pki: data.pki
+                    };
+                    certificateDownloaded = false;
+                })
+                .catch(error => {
+                    hideLoader();
+                    console.error("Error generating the certificate: ", error);
+                });
+
+        }, 3);
+
     });
 
     downloadBtn.addEventListener("click", function () {

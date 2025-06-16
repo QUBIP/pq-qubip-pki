@@ -176,3 +176,50 @@ a.button {
 a.button:hover {
     background-color: #00b38f;
 }
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px; /* Optional: adds space below the header row */
+}
+
+.header-row h2 {
+  margin: 0;
+}
+
+.back-link {
+  text-decoration: none;
+  font-size: 0.9em;
+  color: #007BFF; /* Optional: sets link color */
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+#loader {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+
+#loader::after {
+  content: "";
+  width: 50px;
+  height: 50px;
+  border: 6px solid #ccc;
+  border-top-color: #333;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
