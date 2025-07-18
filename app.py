@@ -182,7 +182,7 @@ def download_certificate(pki, ca, cert_id):
             zipf.write(full_path, arcname=filename) # add filename
             zipf.write(der_cert, arcname=f'{cert_id}-cert.der') # add der cert
             #zipf.write(der_chain, arcname=f'{cert_id}-chain.der') # add der chain
-            zipf.writestr(key_filename, key_content) # add private key
+            zipf.writestr(f"{cert_id}.key", key_content) # add private key
             zipf.write(full_chain_path, arcname=chain_filename)
         stream.seek(0)
 
@@ -227,7 +227,7 @@ def download_ca_certificate(chain, ca):
         return jsonify({'error': 'File not found'}), 404
 
 
-@app.route('/download_crl/<chain>/<ca>', methods=['GET'])
+@app.route('/<chain>/<ca>/crl', methods=['GET'])
 def download_crl(chain, ca):
     if chain == 'certs':
         working_dir = app.config['CERTS_DIR']

@@ -213,7 +213,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 cn_type: cnType,
                 device: device
             };
-            //console.log("Data to be sent:", data);
+            console.log("Data to be sent:", data);
             fetch(`/generate_certificate/${purpose}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

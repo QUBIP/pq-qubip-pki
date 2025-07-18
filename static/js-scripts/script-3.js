@@ -29,8 +29,11 @@ document.addEventListener("DOMContentLoaded", function () {
             event.preventDefault();
             const chainName = this.getAttribute("chain-name");
             const crlName = this.getAttribute("crl-name");
-            ////console.log(`Downloading CRL: ${crlName}`);
-            window.location.href = `/download_crl/${chainName}/${crlName}`;
+            console.log("chainName: " + chainName);
+            console.log("crlName: " + crlName);
+            console.log(`Downloading CRL: ${crlName}`);
+            console.log(`/${chainName}/${crlName}/crl`);
+            window.location.href = `/${chainName}/${crlName}/crl`;
         });
     });
 
