@@ -61,8 +61,9 @@ This chain is used within the DM pilot for MCU IoT devices that connect to the M
 3. The Intermediate CA signs and issues the certificate.
 4. The certificate is distributed to the requester and added to the appropriate trust store.
 
-## 7. TODO Revocation and Certificate Status Checking
+## 7. Revocation and Certificate Status Checking
 - A **Certificate Revocation List (CRL)** is published every 24 hours.
+- For each CA, there is an OCSP responder that can be queried to check the status of a specific certificate
 
 ## 8. Trust Establishment
 - The Root CA certificate must be manually installed on all systems that need to trust the PKI.
