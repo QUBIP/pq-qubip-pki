@@ -41,9 +41,34 @@ h2 {
     gap: 10px; /* Adds space between buttons */
 }
 .ca-section {
-    margin-bottom: 20px;
-    text-align: left;
+  border: 1px solid #ccc;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #fafafa;
 }
+
+.ca-heading {
+  margin-top: 0;
+  color: #5a5cd7;
+}
+
+.ca-desc {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.8rem;
+}
+
+.action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.action-group .button {
+  flex: 1 1 45%;
+  text-align: center;
+}
+
 .chain-section {
     margin-bottom: 20px;
     text-align: left;
@@ -94,7 +119,7 @@ h2 {
 }
 /* Unique colors for distinction */
 .cert-button {
-    background-color: #6a00ff;
+    background-color: #ff0019;
 }
 .cert:hover {
     background-color: #0056b3;
