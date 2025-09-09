@@ -1,32 +1,190 @@
-from flask import Flask, request, abort, render_template, jsonify, send_from_directory, url_for, send_file
-import subprocess
-import os, tempfile, shutil
+from flask import Flask, request, abort, render_template, jsonify, send_file
+import os
+import shutil
+import tempfile
 import uuid
 import logging
-import tempfile
-from pkiCrypto import generate_private_key, generate_csr, sign_certificate, create_certificate_chain, get_ca_certificate_details, get_crl_details, convert_certificate_to_der
-from io import BytesIO # allows to create files without saving them on disk (useful for private key)
-from zipfile import ZipFile 
-from cryptography import x509
-import base64
-from cryptography.hazmat.backends import default_backend
-from config import Config
-import ssl
-import getpass
+from io import BytesIO
+from zipfile import ZipFile
+from werkzeug.utils import secure_filename
 
-# Setup logging
+from pkiCrypto import (
+    generate_private_key,
+    generate_csr,
+    sign_certificate,
+    create_certificate_chain,
+    get_ca_certificate_details,
+    get_crl_details,
+    convert_certificate_to_der,
+)
+from config import Config
+
+# -----------------------------------------------------------------------------
+# App & config
+# -----------------------------------------------------------------------------
 logging.basicConfig(level=logging.INFO)
 
-# Initialize flask app
-app = Flask(__name__, static_url_path='/static')
-
-# Load configurations
+app = Flask(__name__, static_url_path="/static")
 app.config.from_object(Config)
-
-# Validate configurations
 Config.validate()
-openssl = app.config['OPENSSL']
-OQS_CONF="/opt/pki-file/oqs.cnf"
+
+openssl = app.config["OPENSSL"]
+OQS_CONF = "/opt/pki-file/oqs.cnf"
+
+
+# -----------------------------------------------------------------------------
+# Small utilities (no logic changes, just helpers)
+# -----------------------------------------------------------------------------
+def _abort_if_missing(path: str, msg: str):
+    if not os.path.exists(path):
+        logging.error(msg)
+        abort(404, msg)
+
+def _tmpdir(prefix: str) -> str:
+    return tempfile.mkdtemp(prefix=prefix)
+
+def _safe_name(name: str, fallback: str) -> str:
+    return secure_filename(name) or fallback
+
+# -----------------------------------------------------------------------------
+# Path mappers (centralize all directory/file names; logic unchanged)
+# -----------------------------------------------------------------------------
+def chain_issue_paths(chain: str):
+    """Paths needed by /issue_from_csr based on chain."""
+    if chain == "pki-65":
+        base = app.config["PKI65_DIR"]
+        ca_name = "qubip-mpu-ca"
+        return {
+            "ca_certs_dir": os.path.join(base, ca_name, "newcerts"),
+            "ca_conf":      os.path.join(app.config["CONF_DIR_PKI65"], f"{ca_name}.conf"),
+            "ca_key_file":  os.path.join(base, ca_name, "private", f"{ca_name}.key"),
+            "ca_passfile":  os.path.join(base, ca_name, "private", f".{ca_name}-passphrase.txt"),
+            "ca_cert":      os.path.join(base, ca_name, f"{ca_name}-cert.pem"),
+            "ca_chain":     os.path.join(base, ca_name, f"{ca_name}-chain.pem"),
+        }
+    if chain == "pki-44":
+        base = app.config["PKI44_DIR"]
+        ca_name = "qubip-mcu-ca"
+        return {
+            "ca_certs_dir": os.path.join(base, ca_name, "newcerts"),
+            "ca_conf":      os.path.join(app.config["CONF_DIR_PKI44"], f"{ca_name}.conf"),
+            "ca_key_file":  os.path.join(base, ca_name, "private", f"{ca_name}.key"),
+            "ca_passfile":  os.path.join(base, ca_name, "private", f".{ca_name}-passphrase.txt"),
+            "ca_cert":      os.path.join(base, ca_name, f"{ca_name}-cert.pem"),
+            "ca_chain":     os.path.join(base, ca_name, f"{ca_name}-chain.pem"),
+        }
+    if chain == "certs":
+        return {
+            "ca_certs_dir": app.config["TLS_CERTS_DIR"],
+            "ca_conf":      app.config["TLS_CA_CONF"],
+            "ca_key_file":  app.config["TLS_CA_KEY"],
+            "ca_passfile":  app.config["TLS_CA_PASSWORD"],
+            "ca_cert":      app.config["TLS_CA_CERT"],
+            "ca_chain":     app.config["TLS_CA_CHAIN"],
+        }
+    abort(400, "Invalid chain")
+
+def device_ctx(device: str, purpose: str):
+    """
+    Paths & config needed by /generate_certificate based on device + purpose.
+    (Same logic; just centralized.)
+    """
+    if device == "mpu":
+        pki = "pki-65"
+        ca_name = "qubip-mpu-ca"
+        base = app.config["PKI65_DIR"]
+        conf_dir = app.config["CONF_DIR_PKI65"]
+        conf_file = os.path.join(conf_dir, "qubip-server.conf" if purpose == "server" else "qubip-client.conf")
+        return {
+            "pki": pki,
+            "ca": app.config["MPU_CA"],
+            "ca_certs_dir": os.path.join(base, ca_name, "newcerts"),
+            "ca_conf":      os.path.join(conf_dir, f"{ca_name}.conf"),
+            "ca_key_file":  os.path.join(base, ca_name, "private", f"{ca_name}.key"),
+            "ca_passfile":  os.path.join(base, ca_name, "private", f".{ca_name}-passphrase.txt"),
+            "ca_cert":      os.path.join(base, ca_name, f"{ca_name}-cert.pem"),
+            "ca_chain":     os.path.join(base, ca_name, f"{ca_name}-chain.pem"),
+            "conf_file":    conf_file,
+        }
+    if device == "mcu":
+        pki = "pki-44"
+        ca_name = "qubip-mcu-ca"
+        base = app.config["PKI44_DIR"]
+        conf_dir = app.config["CONF_DIR_PKI44"]
+        conf_file = os.path.join(conf_dir, "qubip-server.conf" if purpose == "server" else "qubip-client.conf")
+        return {
+            "pki": pki,
+            "ca": app.config["MCU_CA"],
+            "ca_certs_dir": os.path.join(base, ca_name, "newcerts"),
+            "ca_conf":      os.path.join(conf_dir, f"{ca_name}.conf"),
+            "ca_key_file":  os.path.join(base, ca_name, "private", f"{ca_name}.key"),
+            "ca_passfile":  os.path.join(base, ca_name, "private", f".{ca_name}-passphrase.txt"),
+            "ca_cert":      os.path.join(base, ca_name, f"{ca_name}-cert.pem"),
+            "ca_chain":     os.path.join(base, ca_name, f"{ca_name}-chain.pem"),
+            "conf_file":    conf_file,
+        }
+    if device == "tls":
+        pki = "certs"
+        conf_file = app.config["SERVER_CONF"] if purpose == "server" else app.config["CLIENT_CONF"]
+        return {
+            "pki": pki,
+            "ca": app.config["TLS_CA"],
+            "ca_certs_dir": app.config["TLS_CERTS_DIR"],
+            "ca_conf":      app.config["TLS_CA_CONF"],
+            "ca_key_file":  app.config["TLS_CA_KEY"],
+            "ca_passfile":  app.config["TLS_CA_PASSWORD"],
+            "ca_cert":      app.config["TLS_CA_CERT"],
+            "ca_chain":     app.config["TLS_CA_CHAIN"],
+            "conf_file":    conf_file,
+        }
+    abort(400, f"Invalid device: {device}")
+
+def chain_base_dir(chain: str) -> str:
+    if chain == "certs":
+        return app.config["CERTS_DIR"]
+    if chain == "pki-65":
+        return app.config["PKI65_DIR"]
+    if chain == "pki-44":
+        return app.config["PKI44_DIR"]
+    abort(400, "Invalid chain")
+
+def ca_cert_path(chain: str, ca: str) -> str:
+    base = chain_base_dir(chain)
+    if ca == "qubip-root-ca":
+        return os.path.join(base, app.config["ROOT_CA"], "qubip-root-ca-cert.pem")
+    if ca == "qubip-mpu-ca":
+        return os.path.join(base, app.config["MPU_CA"], "qubip-mpu-ca-cert.pem")
+    if ca == "qubip-mcu-ca":
+        return os.path.join(base, app.config["MCU_CA"], "qubip-mcu-ca-cert.pem")
+    if ca == "qubip-tls-ca":
+        return app.config["TLS_CA_CERT"]
+    abort(404, "CA not found")
+
+def ca_crl_path(chain: str, ca: str) -> str:
+    base = chain_base_dir(chain)
+    if ca == "qubip-root-ca":
+        return os.path.join(base, app.config["ROOT_CA"], "crl", "qubip-root-ca.crl")
+    if ca == "qubip-mpu-ca":
+        return os.path.join(base, app.config["MPU_CA"], "crl", "qubip-mpu-ca.crl")
+    if ca == "qubip-mcu-ca":
+        return os.path.join(base, app.config["MCU_CA"], "crl", "qubip-mcu-ca.crl")
+    if ca == "qubip-tls-ca":
+        return app.config["TLS_CA_CRL"]
+    abort(404, "CA not found")
+
+def issued_certs_dir_for(pki: str, ca: str) -> str:
+    base = chain_base_dir(pki)
+    if ca == "qubip-mpu-ca":
+        return os.path.join(base, "qubip-mpu-ca", "newcerts")
+    if ca == "qubip-mcu-ca":
+        return os.path.join(base, "qubip-mcu-ca", "newcerts")
+    if ca == "qubip-tls-ca":
+        return os.path.join(base, "qubip-tls-ca", "newcerts")
+    abort(404, "CA not found")
+
+# -----------------------------------------------------------------------------
+# Routes
+# -----------------------------------------------------------------------------
 
 @app.post('/issue_from_csr')
 def issue_from_csr():
@@ -35,34 +193,7 @@ def issue_from_csr():
     purpose = request.form.get("purpose", "").strip()
     out_format = request.form.get("out_format", "pem").strip().lower()
     include_chain = "include_chain" in request.form # checkbox
-    if chain == 'pki-65':
-        ca = app.config['MPU_CA']
-        ca_certs_dir = os.path.join(app.config['PKI65_DIR'],'qubip-mpu-ca', 'newcerts')
-        ca_conf = os.path.join(app.config['CONF_DIR_PKI65'], 'qubip-mpu-ca.conf')
-        ca_key_file = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'private', 'qubip-mpu-ca.key')
-        ca_passfile = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'private', '.qubip-mpu-ca-passphrase.txt')
-        ca_cert = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'qubip-mpu-ca-cert.pem')
-        ca_chain = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'qubip-mpu-ca-chain.pem')
-    
-    elif chain == 'pki-44':
-        ca = app.config['MCU_CA']
-        ca_certs_dir = os.path.join(app.config['PKI44_DIR'],'qubip-mcu-ca', 'newcerts')
-        ca_conf = os.path.join(app.config['CONF_DIR_PKI44'], 'qubip-mcu-ca.conf')
-        ca_key_file = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'private', 'qubip-mcu-ca.key')
-        ca_passfile = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'private', '.qubip-mcu-ca-passphrase.txt')
-        ca_cert = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'qubip-mcu-ca-cert.pem')
-        ca_chain = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'qubip-mcu-ca-chain.pem')
-
-    elif chain == 'certs':
-        ca = app.config['TLS_CA']
-        ca_certs_dir = app.config['TLS_CERTS_DIR']
-        ca_conf = app.config['TLS_CA_CONF']
-        ca_key_file = app.config['TLS_CA_KEY']
-        ca_passfile = app.config['TLS_CA_PASSWORD']
-        ca_cert = app.config['TLS_CA_CERT']
-        ca_chain = app.config['TLS_CA_CHAIN']
-    else:
-        abort(400, "Invalid chain")
+    paths = chain_issue_paths(chain)
 
     if purpose not in {"server", "client"}:
         abort(400, "Invalid purpose")
@@ -81,14 +212,16 @@ def issue_from_csr():
 
         # 4) Issue certificate (always produce PEM first)
         leaf_pem = os.path.join(workdir, f"{purpose}.pem")
-        sign_certificate(openssl, chain, csr_path, leaf_pem, purpose, ca_key_file, ca_passfile, ca_cert, ca_conf)
-
+        sign_certificate(
+            openssl, chain, csr_path, leaf_pem, purpose,
+            paths["ca_key_file"], paths["ca_passfile"], paths["ca_cert"], paths["ca_conf"],
+        )
         # 5) Optionally build bundle
         download_path = leaf_pem
         download_name = f"leaf-{purpose}-{chain}.pem"
         if include_chain:
             bundle_pem = os.path.join(workdir, "bundle.pem")
-            create_certificate_chain(leaf_pem, ca_chain, bundle_pem)
+            create_certificate_chain(leaf_pem, paths['ca_chain'], bundle_pem)
             download_path = bundle_pem
             download_name = f"leaf_bundle-{purpose}-{chain}.pem"
 
@@ -96,7 +229,7 @@ def issue_from_csr():
         if out_format == "der":
             der_path = os.path.join(workdir, "leaf.der")
             # If bundle was requested with DER, you likely still return leaf.der (bundling DER is uncommon).
-            convert_certificate_to_der(openssl, chain, leaf_pem, der_path)
+            convert_certificate_to_der(openssl, chain, leaf_pem)
             download_path = der_path
             download_name = download_name.replace(".pem", ".der")
 
@@ -123,46 +256,7 @@ def generate_certificate(purpose):
         try:
             data = request.json or request.form
             device = data.get('device')
-            if device == 'mpu':
-                pki = 'pki-65'
-                ca = app.config['MPU_CA']
-                ca_certs_dir = os.path.join(app.config['PKI65_DIR'],'qubip-mpu-ca', 'newcerts')
-                ca_conf = os.path.join(app.config['CONF_DIR_PKI65'], 'qubip-mpu-ca.conf')
-                ca_key_file = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'private', 'qubip-mpu-ca.key')
-                ca_passfile = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'private', '.qubip-mpu-ca-passphrase.txt')
-                ca_cert = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'qubip-mpu-ca-cert.pem')
-                ca_chain = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'qubip-mpu-ca-chain.pem')
-                if purpose == 'server':
-                    conf_file = os.path.join(app.config['CONF_DIR_PKI65'], 'qubip-server.conf')
-                else:
-                    conf_file = os.path.join(app.config['CONF_DIR_PKI65'], 'qubip-client.conf')
-            elif device == 'mcu':
-                pki = 'pki-44'
-                ca = app.config['MCU_CA']
-                ca_certs_dir = os.path.join(app.config['PKI44_DIR'],'qubip-mcu-ca', 'newcerts')
-                ca_conf = os.path.join(app.config['CONF_DIR_PKI44'], 'qubip-mcu-ca.conf')
-                ca_key_file = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'private', 'qubip-mcu-ca.key')
-                ca_passfile = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'private', '.qubip-mcu-ca-passphrase.txt')
-                ca_cert = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'qubip-mcu-ca-cert.pem')
-                ca_chain = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'qubip-mcu-ca-chain.pem')
-                if purpose == 'server':
-                    conf_file = os.path.join(app.config['CONF_DIR_PKI44'], 'qubip-server.conf')
-                else:
-                    conf_file = os.path.join(app.config['CONF_DIR_PKI44'], 'qubip-client.conf')
-            elif device == 'tls':
-                pki = 'certs'
-                ca = app.config['TLS_CA']
-                ca_certs_dir = app.config['TLS_CERTS_DIR']
-                ca_conf = app.config['TLS_CA_CONF']
-                ca_key_file = app.config['TLS_CA_KEY']
-                ca_passfile = app.config['TLS_CA_PASSWORD']
-                ca_cert = app.config['TLS_CA_CERT']
-                ca_chain = app.config['TLS_CA_CHAIN']
-                if purpose == 'server':
-                    conf_file = app.config['SERVER_CONF']
-                else:
-                    conf_file = app.config['CLIENT_CONF']
-            logging.info(data)
+            ctx = device_ctx(device, purpose)
             algorithm = data.get('algorithm') 
             logging.debug(f"Using algorithm: {algorithm}")
 
@@ -175,7 +269,7 @@ def generate_certificate(purpose):
             key_file = os.path.join(app.config['TEMP_KEY_DIR'], f'{cert_id}.key')
             logging.debug(f"Key file: {key_file}")
             logging.debug(f"Generating certificate for {purpose} with commonName: {commonName}, algorithm: {algorithm}, cert_id: {cert_id}")
-            generate_private_key(openssl, pki, key_file, algorithm)
+            generate_private_key(openssl, ctx['pki'], key_file, algorithm)
             if not key_file:
                 return {"error": "Failed to generate private key"}, 500
             else:
@@ -184,30 +278,35 @@ def generate_certificate(purpose):
                 subjectAltName = commonName
                 logging.info(f"SAN = {subjectAltName}")
                 subj = f"/C=EU/O=QUBIP/CN={commonName}"
-                csr_file = os.path.join(ca_certs_dir, f'{cert_id}.csr')
-                generate_csr(openssl, pki, key_file,csr_file, subj, conf_file, commonName, subjectAltName, cn_type)
+                csr_file = os.path.join(ctx['ca_certs_dir'], f'{cert_id}.csr')
+                generate_csr(
+                    openssl, ctx["pki"], key_file, csr_file, subj, ctx["conf_file"],
+                    commonName, subjectAltName, cn_type
+                )          
                 if not csr_file:
                     return jsonify({"error": "Failed to generate CSR"}), 500
                 logging.info("CSR GENERATED")
-                cert_file = os.path.join(ca_certs_dir, f'{cert_id}-cert.pem')
-                sign_certificate(openssl, pki, csr_file, cert_file, purpose, ca_key_file, ca_passfile, ca_cert, ca_conf)
-
+                cert_file = os.path.join(ctx['ca_certs_dir'], f'{cert_id}-cert.pem')
+                sign_certificate(
+                    openssl, ctx["pki"], csr_file, cert_file, purpose,
+                    ctx["ca_key_file"], ctx["ca_passfile"], ctx["ca_cert"], ctx["ca_conf"]
+                )
                 with open(cert_file, 'r') as cert_fp:
                     certificate = cert_fp.read()
                 if not cert_file:
                     return jsonify({"error": "Failed to generate certificate"}), 500
                 else:
                     chain_file = f'{cert_id}-chain.pem'
-                    chain_path = os.path.join(ca_certs_dir, chain_file)
-                    convert_certificate_to_der(openssl, pki, cert_file)
+                    chain_path = os.path.join(ctx['ca_certs_dir'], chain_file)
+                    convert_certificate_to_der(openssl, ctx['pki'], cert_file)
                     logging.info("DER certificate converted")
-                    create_certificate_chain(cert_file, ca_chain, chain_path)
-                    convert_certificate_to_der(openssl, pki, chain_path)
+                    create_certificate_chain(cert_file, ctx['ca_chain'], chain_path)
+                    convert_certificate_to_der(openssl, ctx['pki'], chain_path)
                     logging.info(chain_path)
                     
                     return jsonify({
-                        'pki': pki,
-                        'ca': ca,
+                        'pki': ctx['pki'],
+                        'ca': ctx['ca'],
                         'certificate_id': cert_id,
                         'certificate': certificate,
                         'filename': f'{cert_id}.pem'
@@ -219,49 +318,23 @@ def generate_certificate(purpose):
 
 @app.route('/download_certificate/<pki>/<ca>/<cert_id>', methods=['GET'])
 def download_certificate(pki, ca, cert_id):
-    logging.info(pki)
-    if pki == 'pki-65':
-        working_dir = app.config['PKI65_DIR']
-    elif pki == 'pki-44':
-        working_dir = app.config['PKI44_DIR']
-    elif pki == 'certs':
-        working_dir = app.config['CERTS_DIR']
-    else:
-        return jsonify({'error': f'Invalid PKI: {pki}'}), 400  # <--- ADD THIS
-    logging.info(working_dir)
-    logging.info(ca)
-    logging.info(cert_id)
-    filename = f'{cert_id}-cert.pem'
-    csr_file = f'{cert_id}.csr'
-    chain_filename = f'{cert_id}-chain.pem'
-    if ca == 'qubip-mpu-ca':
-        certs_path = os.path.join(working_dir, 'qubip-mpu-ca', 'newcerts')
-    elif ca == 'qubip-mcu-ca':
-        certs_path = os.path.join(working_dir, 'qubip-mcu-ca', 'newcerts')
-    elif ca == 'qubip-tls-ca':
-        certs_path = os.path.join(working_dir, 'qubip-tls-ca', 'newcerts')
-    else:
-        return jsonify({'error': 'CA not found'}), 404
+    working_dir = chain_base_dir(pki)  # preserves your original mapping
+    certs_path = issued_certs_dir_for(pki, ca)
 
-    full_path = os.path.join(certs_path, filename) 
-    der_cert = os.path.join(certs_path, f'{filename}.der')
-    if not os.path.exists(der_cert):
-        logging.error(f"DER certificate not found: {der_cert}")
-        return jsonify({'error': 'DER certificate not found'}), 404
-    
-    full_chain_path = os.path.join(certs_path, chain_filename) 
-    der_chain = f'{full_chain_path}.der'
-    if not os.path.exists(full_path):
-        return jsonify({'error': 'Certificate not found'}), 404
-    if not os.path.exists(der_chain):
-        logging.error(f"DER chain certificate not found: {der_chain}")
-        return jsonify({'error': 'DER chain certificate not found'}), 404
-    logging.info(der_chain)
-    key_filename = os.path.join(app.config['TEMP_KEY_DIR'], f"{cert_id}.key")
-    if not os.path.exists(key_filename):
-        return jsonify({'error': 'Private key not found'}), 404
-    if not os.path.exists(full_chain_path):
-        return jsonify({'error': 'Chain certificate file NOT found'}), 404
+    filename        = f"{cert_id}-cert.pem"
+    chain_filename  = f"{cert_id}-chain.pem"
+    full_path       = os.path.join(certs_path, filename)
+    full_chain_path = os.path.join(certs_path, chain_filename)
+    der_cert        = f"{full_path}.der"
+    der_chain       = f"{full_chain_path}.der"
+    key_filename    = os.path.join(app.config["TEMP_KEY_DIR"], f"{cert_id}.key")
+    csr_file        = f"{cert_id}.csr"  # as in your original code
+
+    _abort_if_missing(full_path, "Certificate not found")
+    _abort_if_missing(der_cert, "DER certificate not found")
+    _abort_if_missing(full_chain_path, "Chain certificate file NOT found")
+    _abort_if_missing(der_chain, "DER chain certificate not found")
+    _abort_if_missing(key_filename, "Private key not found")
     with open(key_filename, 'r') as f:
         key_content = f.read()
     try:
@@ -291,122 +364,55 @@ def download_certificate(pki, ca, cert_id):
 
 @app.route('/<chain>/<ca>/certificate', methods=['GET'])
 def download_ca_certificate(chain, ca):
-    if chain == 'certs':
-        certs_path = app.config['CERTS_DIR']
-    elif chain == 'pki-65':
-        certs_path = app.config['PKI65_DIR']
-    elif chain == 'pki-44':
-        certs_path = app.config['PKI44_DIR']
-    if ca == 'qubip-root-ca':
-        filename = os.path.join(certs_path, app.config['ROOT_CA'],'qubip-root-ca-cert.pem')
-    elif ca == 'qubip-mpu-ca':
-        filename = os.path.join(certs_path, app.config['MPU_CA'],'qubip-mpu-ca-cert.pem')
-    elif ca == 'qubip-mcu-ca':
-        filename = os.path.join(certs_path, app.config['MCU_CA'],'qubip-mcu-ca-cert.pem')
-    elif ca == 'qubip-tls-ca':
-        filename = app.config['TLS_CA_CERT']
-    if not os.path.exists(filename):
-        logging.error(f"CA Certificate not found")
-        return jsonify({'error': 'Certificate not found'}), 404
+    filename = ca_cert_path(chain, ca)
+    _abort_if_missing(filename, "Certificate not found")
     try:
         return send_file(filename, as_attachment=True)
     except FileNotFoundError:
         logging.error("app.py - Certificate not found: %s", filename)
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({"error": "File not found"}), 404
 
 
 @app.route('/<chain>/<ca>/crl', methods=['GET'])
 def download_crl(chain, ca):
-    if chain == 'certs':
-        working_dir = app.config['CERTS_DIR']
-    elif chain == 'pki-65':
-        working_dir = app.config['PKI65_DIR']
-    elif chain == 'pki-44':
-        working_dir = app.config['PKI44_DIR']
-    
-    if ca == 'qubip-root-ca':
-        ca_crl = os.path.join(working_dir, app.config['ROOT_CA'],'crl','qubip-root-ca.crl')
-    elif ca == 'qubip-mpu-ca':
-        ca_crl = os.path.join(working_dir, app.config['MPU_CA'],'crl','qubip-mpu-ca.crl')
-    elif ca == 'qubip-mcu-ca':
-        ca_crl = os.path.join(working_dir, app.config['MCU_CA'],'crl','qubip-mcu-ca.crl')
-    elif ca == 'qubip-tls-ca':
-        ca_crl = app.config['TLS_CA_CRL']
-    if not os.path.exists(ca_crl):
-        return jsonify({'error': 'CRL not found'}), 404
+    ca_crl = ca_crl_path(chain, ca)
+    _abort_if_missing(ca_crl, "CRL not found")
     try:
         return send_file(ca_crl, as_attachment=True)
     except FileNotFoundError:
         logging.error("app.py - CRL not found: %s", ca_crl)
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({"error": "File not found"}), 404
 
 @app.route('/certificate_details/<chain>/<ca>/ca_certificate', methods=['GET'])
 def view_ca_certificate(chain, ca):
-    if chain == 'certs':
-        certs_path = app.config['CERTS_DIR']
-    elif chain == 'pki-65':
-        certs_path = app.config['PKI65_DIR']
-    elif chain == 'pki-44':
-        certs_path = app.config['PKI44_DIR']
-    
-    cert_id = ca
-    if ca == 'qubip-root-ca':
-        filename = os.path.join(certs_path, app.config['ROOT_CA'],'qubip-root-ca-cert.pem')
-    elif ca == 'qubip-mpu-ca':
-        filename = os.path.join(certs_path, app.config['MPU_CA'],'qubip-mpu-ca-cert.pem')
-    elif ca == 'qubip-mcu-ca':
-        filename = os.path.join(certs_path, app.config['MCU_CA'],'qubip-mcu-ca-cert.pem')
-    elif ca == 'qubip-tls-ca':
-        filename = os.path.join(certs_path, app.config['TLS_CA'],'qubip-tls-ca-cert.pem')
-
-    if not os.path.exists(filename):
-        return jsonify({'error': 'Certificate not found'}), 404
+    filename = ca_cert_path(chain, ca)
+    _abort_if_missing(filename, "Certificate not found")
 
     try:
-        if chain == 'pki-44':
+        if chain == "pki-44":
             openssl_cmd = f"OPENSSL_CONF={OQS_CONF} {openssl}"
             cert_data = get_ca_certificate_details(openssl_cmd, filename)
         else:
             cert_data = get_ca_certificate_details(openssl, filename)
 
-        return render_template('view-ca-certificate.html', 
-                               cert_data=cert_data,
-                               ca=ca)
+        return render_template("view-ca-certificate.html", cert_data=cert_data, ca=ca)
     except Exception as e:
         logging.error(f"Error reading certificate: {e}")
-        return jsonify({'error': 'Error reading certificate'}), 500
+        return jsonify({"error": "Error reading certificate"}), 500
 
 @app.route('/crl_details/<chain>/<ca>', methods=['GET'])
 def view_ca_crl(chain, ca):
-    cert_id = ca
-    logging.info(chain)
-    if chain == 'certs':
-        working_dir = app.config['CERTS_DIR']
-    elif chain == 'pki-65':
-        working_dir = app.config['PKI65_DIR']
-    elif chain == 'pki-44':
-        working_dir = app.config['PKI44_DIR']
-    if ca == 'qubip-root-ca':
-        filename = os.path.join(working_dir, app.config['ROOT_CA'],'crl','qubip-root-ca.crl')
-    elif ca == 'qubip-mpu-ca':
-        filename = os.path.join(working_dir, app.config['MPU_CA'],'crl','qubip-mpu-ca.crl')
-    elif ca == 'qubip-mcu-ca':
-        filename = os.path.join(working_dir, app.config['MCU_CA'],'crl','qubip-mcu-ca.crl')
-    elif ca == 'qubip-tls-ca':
-        filename = app.config['TLS_CA_CRL']
-
-    logging.info(f"app.py - CRL filename: {filename}")
-    if not os.path.exists(filename):
-        return jsonify({'error': 'CRL not found'}), 404
+    filename = ca_crl_path(chain, ca)
+    _abort_if_missing(filename, "CRL not found")
     try:
-        if chain == 'pki-44':
+        if chain == "pki-44":
             openssl_cmd = f"OPENSSL_CONF={OQS_CONF} {openssl}"
             crl_data = get_crl_details(openssl_cmd, filename)
         else:
             crl_data = get_crl_details(openssl, filename)
-        return render_template('view-ca-crl.html', crl_data=crl_data, ca=ca)
-    except Exception as e:
-        return jsonify({'error': 'Error reading CRL'}), 500
+        return render_template("view-ca-crl.html", crl_data=crl_data, ca=ca)
+    except Exception:
+        return jsonify({"error": "Error reading CRL"}), 500
 
 @app.route('/')
 def home():
