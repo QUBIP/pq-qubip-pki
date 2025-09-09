@@ -15,6 +15,72 @@
         <h1>Welcome to QUBIP PKI!</h1>
         <p>This interface allows you to receive x509 post-quantum certificates issued by the QUBIP PKI. You can generate
             a post-quantum certificate and view the CA certificates and CRLs of the PKI.</p>
+        <!-- ==== Issue Certificate FROM CSR ==== -->
+        <section class="section">
+            <h2 class="section-title">Certificate with CSR</h2>
+            <p class="section-subtitle">
+                Upload a CSR (PEM or DER). The CA will copy Subject/SAN from your CSR and issue a leaf certificate.
+            </p>
+
+            <form id="csr-form" class="card form" action="{{ url_for('issue_from_csr') }}" method="POST"
+                enctype="multipart/form-data">
+
+                {# If you use CSRF protection, include your token here #}
+                {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label for="chain">PKI chain</label>
+                        <select id="chain" name="chain" required>
+                            <option value="" disabled selected>Select a chain…</option>
+                            <option value="pki-65">QUBIP MPU chain (MLDSA65/ED25519)</option>
+                            <option value="pki-44">QUBIP MCU chain (MLDSA44/ED25519)</option>
+                            <option value="certs">QUBIP TLS chain (SPHINCS+/MLDSA65)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="purpose">Purpose</label>
+                        <select id="purpose" name="purpose" required>
+                            <option value="server">Server</option>
+                            <option value="client">Client</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row form-row-full">
+                        <label for="csr">CSR file</label>
+                        <input id="csr" name="csr" type="file" accept=".csr,.pem" required>
+                        <small class="hint">Accepted: PEM (.csr, .pem). DER is OK—backend will detect and
+                            convert.</small>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="out_format">Output format</label>
+                        <select id="out_format" name="out_format">
+                            <option value="pem" selected>PEM</option>
+                            <option value="der">DER</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row align-end">
+                        <label class="checkbox">
+                            <input type="checkbox" name="include_chain" id="include_chain" checked>
+                            Include issuing chain (bundle)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-container">
+                    <button type="submit" class="button purpose" id="csr-submit">Issue certificate</button>
+                </div>
+
+                <div id="csr-msg" class="msg" aria-live="polite"></div>
+            </form>
+        </section>
+        <!-- ==== /Issue Certificate FROM CSR ==== -->
+
+
+
         <h2>Generate Private Key and certificate</h2>
         <p>Please select the purpose of the certificate you want</p>
         <div class="button-container">

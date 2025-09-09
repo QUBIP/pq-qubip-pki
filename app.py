@@ -1,6 +1,6 @@
-from flask import Flask, request, render_template, jsonify, send_from_directory, url_for, send_file
+from flask import Flask, request, abort, render_template, jsonify, send_from_directory, url_for, send_file
 import subprocess
-import os
+import os, tempfile, shutil
 import uuid
 import logging
 import tempfile
@@ -26,6 +26,94 @@ app.config.from_object(Config)
 # Validate configurations
 Config.validate()
 openssl = app.config['OPENSSL']
+OQS_CONF="/opt/pki-file/oqs.cnf"
+
+@app.post('/issue_from_csr')
+def issue_from_csr():
+    # read form fields
+    chain = request.form.get("chain", "").strip()
+    purpose = request.form.get("purpose", "").strip()
+    out_format = request.form.get("out_format", "pem").strip().lower()
+    include_chain = "include_chain" in request.form # checkbox
+    if chain == 'pki-65':
+        ca = app.config['MPU_CA']
+        ca_certs_dir = os.path.join(app.config['PKI65_DIR'],'qubip-mpu-ca', 'newcerts')
+        ca_conf = os.path.join(app.config['CONF_DIR_PKI65'], 'qubip-mpu-ca.conf')
+        ca_key_file = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'private', 'qubip-mpu-ca.key')
+        ca_passfile = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'private', '.qubip-mpu-ca-passphrase.txt')
+        ca_cert = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'qubip-mpu-ca-cert.pem')
+        ca_chain = os.path.join(app.config['PKI65_DIR'], 'qubip-mpu-ca', 'qubip-mpu-ca-chain.pem')
+    
+    elif chain == 'pki-44':
+        ca = app.config['MCU_CA']
+        ca_certs_dir = os.path.join(app.config['PKI44_DIR'],'qubip-mcu-ca', 'newcerts')
+        ca_conf = os.path.join(app.config['CONF_DIR_PKI44'], 'qubip-mcu-ca.conf')
+        ca_key_file = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'private', 'qubip-mcu-ca.key')
+        ca_passfile = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'private', '.qubip-mcu-ca-passphrase.txt')
+        ca_cert = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'qubip-mcu-ca-cert.pem')
+        ca_chain = os.path.join(app.config['PKI44_DIR'], 'qubip-mcu-ca', 'qubip-mcu-ca-chain.pem')
+
+    elif chain == 'certs':
+        ca = app.config['TLS_CA']
+        ca_certs_dir = app.config['TLS_CERTS_DIR']
+        ca_conf = app.config['TLS_CA_CONF']
+        ca_key_file = app.config['TLS_CA_KEY']
+        ca_passfile = app.config['TLS_CA_PASSWORD']
+        ca_cert = app.config['TLS_CA_CERT']
+        ca_chain = app.config['TLS_CA_CHAIN']
+    else:
+        abort(400, "Invalid chain")
+
+    if purpose not in {"server", "client"}:
+        abort(400, "Invalid purpose")
+    if out_format not in {"pem", "der"}:
+        abort(400, "Invalid output format")
+
+    up = request.files.get("csr")
+    if not up or up.filename == "":
+        abort(400, "CSR file is required")
+    # 3) Work in an isolated temp dir
+    workdir = tempfile.mkdtemp(prefix="csr_issue_")
+    try:
+        csr_path = os.path.join("/tmp/", "input.csr")
+        up.save(csr_path)
+        logging.info(csr_path)
+
+        # 4) Issue certificate (always produce PEM first)
+        leaf_pem = os.path.join(workdir, f"{purpose}.pem")
+        sign_certificate(openssl, chain, csr_path, leaf_pem, purpose, ca_key_file, ca_passfile, ca_cert, ca_conf)
+
+        # 5) Optionally build bundle
+        download_path = leaf_pem
+        download_name = f"leaf-{purpose}-{chain}.pem"
+        if include_chain:
+            bundle_pem = os.path.join(workdir, "bundle.pem")
+            create_certificate_chain(leaf_pem, ca_chain, bundle_pem)
+            download_path = bundle_pem
+            download_name = f"leaf_bundle-{purpose}-{chain}.pem"
+
+        # 6) Convert to DER if requested
+        if out_format == "der":
+            der_path = os.path.join(workdir, "leaf.der")
+            # If bundle was requested with DER, you likely still return leaf.der (bundling DER is uncommon).
+            convert_certificate_to_der(openssl, chain, leaf_pem, der_path)
+            download_path = der_path
+            download_name = download_name.replace(".pem", ".der")
+
+        # 7) Return file as download
+        mimetype = "application/pkix-cert" if out_format == "der" else "application/x-pem-file"
+        return send_file(download_path, as_attachment=True, download_name=download_name, mimetype=mimetype)
+
+    except Exception as e:
+        app.logger.exception("Issuance failed")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        # Remove temp dir after response has been sent
+        try:
+            shutil.rmtree(workdir, ignore_errors=True)
+        except Exception:
+            pass
+
 
 @app.route('/generate_certificate/<purpose>', methods=['GET','POST'])
 def generate_certificate(purpose):
@@ -87,7 +175,7 @@ def generate_certificate(purpose):
             key_file = os.path.join(app.config['TEMP_KEY_DIR'], f'{cert_id}.key')
             logging.debug(f"Key file: {key_file}")
             logging.debug(f"Generating certificate for {purpose} with commonName: {commonName}, algorithm: {algorithm}, cert_id: {cert_id}")
-            generate_private_key(openssl, key_file, algorithm)
+            generate_private_key(openssl, pki, key_file, algorithm)
             if not key_file:
                 return {"error": "Failed to generate private key"}, 500
             else:
@@ -97,12 +185,12 @@ def generate_certificate(purpose):
                 logging.info(f"SAN = {subjectAltName}")
                 subj = f"/C=EU/O=QUBIP/CN={commonName}"
                 csr_file = os.path.join(ca_certs_dir, f'{cert_id}.csr')
-                generate_csr(openssl, key_file,csr_file, subj, conf_file, commonName, subjectAltName, cn_type)
+                generate_csr(openssl, pki, key_file,csr_file, subj, conf_file, commonName, subjectAltName, cn_type)
                 if not csr_file:
                     return jsonify({"error": "Failed to generate CSR"}), 500
                 logging.info("CSR GENERATED")
                 cert_file = os.path.join(ca_certs_dir, f'{cert_id}-cert.pem')
-                sign_certificate(openssl, csr_file, cert_file, purpose, ca_key_file, ca_passfile, ca_cert, ca_conf)
+                sign_certificate(openssl, pki, csr_file, cert_file, purpose, ca_key_file, ca_passfile, ca_cert, ca_conf)
 
                 with open(cert_file, 'r') as cert_fp:
                     certificate = cert_fp.read()
@@ -111,10 +199,10 @@ def generate_certificate(purpose):
                 else:
                     chain_file = f'{cert_id}-chain.pem'
                     chain_path = os.path.join(ca_certs_dir, chain_file)
-                    convert_certificate_to_der(openssl, cert_file)
+                    convert_certificate_to_der(openssl, pki, cert_file)
                     logging.info("DER certificate converted")
                     create_certificate_chain(cert_file, ca_chain, chain_path)
-                    convert_certificate_to_der(openssl, chain_path)
+                    convert_certificate_to_der(openssl, pki, chain_path)
                     logging.info(chain_path)
                     
                     return jsonify({
@@ -275,7 +363,12 @@ def view_ca_certificate(chain, ca):
         return jsonify({'error': 'Certificate not found'}), 404
 
     try:
-        cert_data = get_ca_certificate_details(openssl, filename)
+        if chain == 'pki-44':
+            openssl_cmd = f"OPENSSL_CONF={OQS_CONF} {openssl}"
+            cert_data = get_ca_certificate_details(openssl_cmd, filename)
+        else:
+            cert_data = get_ca_certificate_details(openssl, filename)
+
         return render_template('view-ca-certificate.html', 
                                cert_data=cert_data,
                                ca=ca)
@@ -306,7 +399,11 @@ def view_ca_crl(chain, ca):
     if not os.path.exists(filename):
         return jsonify({'error': 'CRL not found'}), 404
     try:
-        crl_data = get_crl_details(openssl, filename)
+        if chain == 'pki-44':
+            openssl_cmd = f"OPENSSL_CONF={OQS_CONF} {openssl}"
+            crl_data = get_crl_details(openssl_cmd, filename)
+        else:
+            crl_data = get_crl_details(openssl, filename)
         return render_template('view-ca-crl.html', crl_data=crl_data, ca=ca)
     except Exception as e:
         return jsonify({'error': 'Error reading CRL'}), 500
