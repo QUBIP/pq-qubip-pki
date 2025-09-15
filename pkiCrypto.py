@@ -24,7 +24,10 @@ def generate_private_key(openssl, pki, key_file, algorithm):
         # include provider flags so we don’t depend on oqs.cnf content
         provider_flags = f'-provider oqsprovider -provider default -provider-path {shlex.quote(OPENSSL_MODULES)} -propquery provider=oqsprovider'
     else:
-        openssl_cmd = openssl
+        if algorithm == 'mldsa44_ed25519':
+            openssl_cmd = f'OPENSSL_CONF={shlex.quote(OQS_CONF)} OPENSSL_MODULES={shlex.quote(OPENSSL_MODULES)} {openssl}'
+        else:
+            openssl_cmd = openssl
     if algorithm in classical_algorithms:
         if algorithm == 'rsa2048':
             cmd = f"{openssl_cmd} genpkey -algorithm RSA -out {key_file} -pkeyopt rsa_keygen_bits:2048"
@@ -34,7 +37,6 @@ def generate_private_key(openssl, pki, key_file, algorithm):
         elif algorithm == 'ed25519':
             cmd = f"{openssl_cmd} genpkey -algorithm ed25519 -out {key_file}"
     elif algorithm in pq_algorithms:
-        logging.debug(f"Generating {algorithm} private key.")
         cmd = f"{openssl_cmd} genpkey -algorithm {algorithm} -out {key_file}"
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
@@ -50,7 +52,6 @@ def generate_csr(openssl, pki, private_key, csr_filename, subject, conf, commonN
     env = os.environ
     if pki == 'pki-44':
         openssl_cmd = f'OPENSSL_CONF={shlex.quote(OQS_CONF)} OPENSSL_MODULES={shlex.quote(OPENSSL_MODULES)} {openssl}'
-        
     else:
         openssl_cmd = openssl
     if subjectAltName != "":  
@@ -80,7 +81,6 @@ def sign_certificate(openssl, pki, csr_file, crt_file, purpose, ca_key, ca_passf
         
     else:
         openssl_cmd = openssl
-
     try:
         cmd = f"{openssl_cmd} ca -config {ca_conf} -keyfile {ca_key} -passin file:{ca_passfile} -cert {ca_cert} -in {csr_file} -out {crt_file} -extensions {ext} -days 365 -batch"
         subprocess.check_output(cmd, shell=True, text=True).strip()
