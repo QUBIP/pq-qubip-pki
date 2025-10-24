@@ -32,16 +32,32 @@ document.addEventListener("DOMContentLoaded", function () {
     successMessage.textContent = "Certificate generated successfully!";
     certForm.parentNode.insertBefore(successMessage, certActions);
 
+    const loading = document.getElementById("loading");
+    const submitButton = document.getElementById("submitButton");
+
+    const LOADER_KEY = 'certgen:loader';
     function showLoader() {
-        const loader = document.getElementById("loader");
-        loader.style.display = "flex";
+        loading.style.display = "flex";
+        sessionStorage.setItem(LOADER_KEY, 'on');
     }
 
     function hideLoader() {
-        const loader = document.getElementById("loader");
-        loader.style.display = "none";
+        loading.style.display = "none";
+        sessionStorage.removeItem(LOADER_KEY);
     }
 
+    window.addEventListener('pageshow', (evt) => {
+        if (evt.persisted || sessionStorage.getItem(LOADER_KEY) === 'on') {
+            hideLoader();
+            if (submitButton) submitButton.disabled = false;
+        }
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        if (sessionStorage.getItem(LOADER_KEY) === 'on') {
+            hideLoader();
+            if (submitButton) submitButton.disabled = false;
+        }
+    });
     function resetCheckboxes() {
         fqdnCheckboxes.forEach(checkbox => checkbox.checked = false);
         ipCheckboxes.forEach(checkbox => checkbox.checked = false);
@@ -192,89 +208,38 @@ document.addEventListener("DOMContentLoaded", function () {
     form.addEventListener("submit", function (event) {
         event.preventDefault();
 
-        showLoader();
         const validation = validateInput();
         if (!validation.isValid) return;
+        showLoader();
+        submitButton.disabled = true;
+        const algorithm = document.getElementById('key_algorithm').value;
+        let commonName = null;
+        let cnType = null;
 
-        setTimeout(() => {
-            form.style.display = "none";
-            const algorithm = document.getElementById('key_algorithm').value;
-            let commonName = null;
-            let cnType = null;
 
-
-            commonName = validation.commonName;
-            cnType = validation.cnType;
-            device = validation.device;
-            const data = {
-                common_name: commonName,
-                algorithm: algorithm,
-                purpose: purpose,
-                cn_type: cnType,
-                device: device
-            };
-            console.log("Data to be sent:", data);
-            fetch(`/generate_certificate/${purpose}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            }).then(response => response.json())
-                .then(data => {
-                    hideLoader();
-                    certActions.style.display = "flex";
-                    if (data.certificate) {
-                        certContent.style.display = "block";
-                        certText.textContent = data.certificate;
-                    }
-                    successMessage.style.display = "block";
-                    certActions.style.display = "flex";
-                    latestCertInfo = {
-                        ca: data.ca,
-                        certificate_id: data.certificate_id,
-                        pki: data.pki
-                    };
-                    certificateDownloaded = false;
-                })
-                .catch(error => {
-                    hideLoader();
-                    console.error("Error generating the certificate: ", error);
-                });
-
-        }, 3);
-
-    });
-
-    downloadBtn.addEventListener("click", function () {
-        if (certificateDownloaded) {
-            alert("The private key has been deleted for security reasons. Please generate another certificate if you need it.");
-            return;
-        }
-
-        const userConfirmed = confirm("Warning: This certificate and private key can only be downloaded ONCE. After that, the private key will be deleted from the server. Do you want to proceed?");
-        if (!userConfirmed) return;
-
-        if (!latestCertInfo) {
-            alert("No certificate available to download.");
-            return;
-        }
-        //console.log(latestCertInfo)
-
-        fetch(`/download_certificate/${latestCertInfo.pki}/${latestCertInfo.ca}/${latestCertInfo.certificate_id}`, { method: 'GET' })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to download certificate');
-                return response.blob();
-            })
-            .then(blob => {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `${latestCertInfo.certificate_id}.zip`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                certificateDownloaded = true;
+        commonName = validation.commonName;
+        cnType = validation.cnType;
+        device = validation.device;
+        const data = {
+            common_name: commonName,
+            algorithm: algorithm,
+            purpose: purpose,
+            cn_type: cnType,
+            device: device
+        };
+        fetch(`/generate_certificate/${purpose}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(response => response.json())
+            .then(data => {
+                //hideLoader();
+                window.location.assign(`/certificate/${data.pki}/${data.ca}/${data.certificate_id}`);
             })
             .catch(error => {
-                console.error("Error downloading certificate:", error);
+                hideLoader();
+                console.error("Error generating the certificate: ", error);
             });
+
     });
 });

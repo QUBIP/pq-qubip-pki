@@ -71,6 +71,21 @@ button:hover {
     padding: 10px 15px;
 }
 
+/* only hide on the generator page */
+.page-generator #certificate-content { display: none; }
+
+#certificate-content pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.actions-row {
+  display: flex;
+  justify-content: center; /* horizontal */
+  align-items: center;     /* vertical */
+}
+
+
 #certificate-content {
     margin-top: 20px;
     background: #eee;
@@ -223,3 +238,17 @@ a.button:hover {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+.loading {
+  position: fixed; inset: 0;
+  display: none; /* toggled via JS */
+  align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.6);
+  z-index: 9999;
+}
+.spinner {
+  width: 48px; height: 48px;
+  border: 6px solid #ccc; border-top-color: #333;
+  border-radius: 50%; animation: spin 1s linear infinite;
+  margin-right: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

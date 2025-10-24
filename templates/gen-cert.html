@@ -9,6 +9,11 @@
 </head>
 
 <body>
+    <div id="loading" class="loading" aria-live="polite" aria-busy="true" style="display:none;">
+        <div class="spinner"></div>
+        <p>Generating certificate…</p>
+    </div>
+
     <div class="container">
         <div class="header-row">
             <h2>Generate {{ purpose }} certificate</h2>
@@ -73,14 +78,8 @@
             </div>
             <button id="submitButton" type="submit">Generate Private Key and Certificate</button>
         </form>
-        <div id="certificate-actions" style="display: none;">
-             <div id="loader" class="loader"></div> 
-            <a href="#" class="button" id="download-cert-btn">Download Key, Certificate and chain</a>
-        </div>
-        <div id="certificate-content">
-            <pre id="certText"></pre>
-        </div>
     </div>
+
     <script src="/static/js-scripts/gen-cert-5.js"></script>
 </body>
 

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Certificate Ready</title>
+    <link rel="stylesheet" href="/static/css/certificate_generation_style.css">
+    <style>
+        #certificate-content pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+    </style>
+</head>
+
+<body class="page-generator">
+
+    <div class="container">
+        <div class="header-row">
+            <h2>Certificate generated successfully</h2>
+            <a href="/" class="back-link">Home</a>
+        </div>
+
+        <p>Your certificate has been generated. You can download the bundle now.</p>
+
+        <div class="actions-row">
+            <a class="button" id="download-cert-btn" data-pki="{{ pki }}" data-ca="{{ ca }}"
+                data-cert-id="{{ certificate_id }}"
+                href="{{ url_for('download_certificate', pki=pki, ca=ca, cert_id=certificate_id) }}">
+                Download Key, Certificate and Chain
+            </a>
+        </div>
+        <h3>Certificate (PEM)</h3>
+        <div id="certificate-content" style="display:block">
+            <pre id="certText">{{ cert_pem | safe}}</pre>
+        </div>
+
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            sessionStorage.removeItem('certgen:loader');
+            const btn = document.getElementById('download-cert-btn');
+            const pki = btn.dataset.pki;
+            const ca = btn.dataset.ca;
+            const id = btn.dataset.certId; // maps to data-cert-id
+
+            // Safety check: if something is still missing, fall back to link HREF.
+            if (!pki || !ca || !id) {
+                console.error('Missing ids on button dataset; using href fallback.');
+            }
+
+            const storageKey = `certdl:${pki}:${ca}:${id}`;
+            if (sessionStorage.getItem(storageKey) === 'done') {
+                btn.textContent = 'Already downloaded';
+                btn.setAttribute('aria-disabled', 'true');
+                btn.classList.add('disabled');
+            }
+
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+
+                if (sessionStorage.getItem(storageKey) === 'done') {
+                    alert('The private key was already downloaded and deleted from the server.');
+                    return;
+                }
+
+                const ok = confirm(
+                    'Warning: This certificate bundle (including the private key) can be downloaded ONLY ONCE. ' +
+                    'After download, the private key will be deleted from the server. Proceed?'
+                );
+                if (!ok) return;
+
+                const url = `/download_certificate/${pki}/${ca}/${id}`; // uses dataset values
+
+                try {
+                    const res = await fetch(url, { method: 'GET' });
+                    if (!res.ok) {
+                        if (res.status === 410 || res.status === 404) {
+                            alert('This bundle is no longer available (already downloaded).');
+                        } else {
+                            alert(`Failed to download (HTTP ${res.status}).`);
+                        }
+                        return;
+                    }
+
+                    const blob = await res.blob();
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `${id}.zip`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    sessionStorage.setItem(storageKey, 'done');
+                    btn.textContent = 'Downloaded';
+                    btn.setAttribute('aria-disabled', 'true');
+                    btn.classList.add('disabled');
+                } catch (err) {
+                    console.error('Error downloading bundle:', err);
+                    alert('Unexpected error during download.');
+                }
+            });
+        });
+    </script>
+
+
+</body>
+
+</html>

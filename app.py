@@ -182,6 +182,14 @@ def issued_certs_dir_for(pki: str, ca: str) -> str:
         return os.path.join(base, "qubip-tls-ca", "newcerts")
     abort(404, "CA not found")
 
+def load_cert_from_store(pki: str, ca: str, certificate_id: str) -> str:
+    """Load certificate PEM from storage based on pki, ca, and certificate_id."""
+    certs_dir = issued_certs_dir_for(pki, ca)
+    cert_path = os.path.join(certs_dir, f"{certificate_id}-cert.pem")
+    if not os.path.exists(cert_path):
+        return None
+    with open(cert_path, 'r') as f:
+        return f.read()
 # -----------------------------------------------------------------------------
 # Routes
 # -----------------------------------------------------------------------------
@@ -405,6 +413,21 @@ def view_ca_crl(chain, ca):
     except Exception as e:
         logging.error(f"Error reading CRL: {e}")
         return render_template("error.html", message="Error reading CRL"), 500
+    
+@app.route('/certificate/<pki>/<ca>/<certificate_id>')
+def certificate_success(pki, ca, certificate_id):
+    logging.info(f"Fetching certificate for PKI: {pki}, CA: {ca}, Certificate ID: {certificate_id}")    
+    # Retrieve the certificate text server-side using your existing storage method.
+    # Example: read from disk or cache using (pki, ca, certificate_id)
+    cert_pem = load_cert_from_store(pki, ca, certificate_id)  # <-- implement this
+
+    if not cert_pem:
+        return render_template('error.html', message="Certificate not found"), 404
+
+    return render_template('certificate_success.html',
+                           pki=pki, ca=ca, certificate_id=certificate_id,
+                           cert_pem=cert_pem)
+
 
 @app.route('/')
 def home():
