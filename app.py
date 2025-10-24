@@ -271,7 +271,7 @@ def generate_certificate(purpose):
             logging.debug(f"Generating certificate for {purpose} with commonName: {commonName}, algorithm: {algorithm}, cert_id: {cert_id}")
             generate_private_key(openssl, ctx['pki'], key_file, algorithm)
             if not key_file:
-                return {"error": "Failed to generate private key"}, 500
+                return render_template('error.html', message="Failed to generate private key"), 500
             else:
                 logging.info("PRIVATE KEY GENERATED")
                 logging.info(f"Key file: {key_file}")
@@ -284,7 +284,7 @@ def generate_certificate(purpose):
                     commonName, subjectAltName, cn_type
                 )          
                 if not csr_file:
-                    return jsonify({"error": "Failed to generate CSR"}), 500
+                    return render_template('error.html', message="Failed to generate CSR"), 500
                 logging.info("CSR GENERATED")
                 cert_file = os.path.join(ctx['ca_certs_dir'], f'{cert_id}-cert.pem')
                 sign_certificate(
@@ -389,30 +389,22 @@ def view_ca_certificate(chain, ca):
     _abort_if_missing(filename, "Certificate not found")
 
     try:
-        if chain == "pki-44":
-            openssl_cmd = f"OPENSSL_CONF={OQS_CONF} {openssl}"
-            cert_data = get_ca_certificate_details(openssl_cmd, filename)
-        else:
-            cert_data = get_ca_certificate_details(openssl, filename)
-
+        cert_data = get_ca_certificate_details(openssl, filename)
         return render_template("view-ca-certificate.html", cert_data=cert_data, ca=ca)
     except Exception as e:
         logging.error(f"Error reading certificate: {e}")
-        return jsonify({"error": "Error reading certificate"}), 500
+        return render_template("error.html", message="Error reading certificate"), 500
 
 @app.route('/crl_details/<chain>/<ca>', methods=['GET'])
 def view_ca_crl(chain, ca):
     filename = ca_crl_path(chain, ca)
     _abort_if_missing(filename, "CRL not found")
     try:
-        if chain == "pki-44":
-            openssl_cmd = f"OPENSSL_CONF={OQS_CONF} {openssl}"
-            crl_data = get_crl_details(openssl_cmd, filename)
-        else:
-            crl_data = get_crl_details(openssl, filename)
+        crl_data = get_crl_details(openssl, filename)
         return render_template("view-ca-crl.html", crl_data=crl_data, ca=ca)
-    except Exception:
-        return jsonify({"error": "Error reading CRL"}), 500
+    except Exception as e:
+        logging.error(f"Error reading CRL: {e}")
+        return render_template("error.html", message="Error reading CRL"), 500
 
 @app.route('/')
 def home():

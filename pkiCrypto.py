@@ -18,26 +18,16 @@ OPENSSL_MODULES = "/home/torseec/quantumsafe/build/lib/ossl-modules"
 OQS_CONF = "/opt/pki-file/oqs.cnf"
 
 def generate_private_key(openssl, pki, key_file, algorithm):
-    if pki == 'pki-44':
-# add BOTH env vars inline
-        openssl_cmd = f'OPENSSL_CONF={shlex.quote(OQS_CONF)} OPENSSL_MODULES={shlex.quote(OPENSSL_MODULES)} {openssl}'
-        # include provider flags so we don’t depend on oqs.cnf content
-        provider_flags = f'-provider oqsprovider -provider default -provider-path {shlex.quote(OPENSSL_MODULES)} -propquery provider=oqsprovider'
-    else:
-        if algorithm == 'mldsa44_ed25519':
-            openssl_cmd = f'OPENSSL_CONF={shlex.quote(OQS_CONF)} OPENSSL_MODULES={shlex.quote(OPENSSL_MODULES)} {openssl}'
-        else:
-            openssl_cmd = openssl
     if algorithm in classical_algorithms:
         if algorithm == 'rsa2048':
-            cmd = f"{openssl_cmd} genpkey -algorithm RSA -out {key_file} -pkeyopt rsa_keygen_bits:2048"
+            cmd = f"{openssl} genpkey -algorithm RSA -out {key_file} -pkeyopt rsa_keygen_bits:2048"
         elif algorithm == 'rsa4096':
-            cmd = f"{openssl_cmd} genpkey -algorithm RSA -out {key_file} -pkeyopt rsa_keygen_bits:4096"
+            cmd = f"{openssl} genpkey -algorithm RSA -out {key_file} -pkeyopt rsa_keygen_bits:4096"
 
         elif algorithm == 'ed25519':
-            cmd = f"{openssl_cmd} genpkey -algorithm ed25519 -out {key_file}"
+            cmd = f"{openssl} genpkey -algorithm ed25519 -out {key_file}"
     elif algorithm in pq_algorithms:
-        cmd = f"{openssl_cmd} genpkey -algorithm {algorithm} -out {key_file}"
+        cmd = f"{openssl} genpkey -algorithm {algorithm} -out {key_file}"
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
     
@@ -50,10 +40,6 @@ def generate_private_key(openssl, pki, key_file, algorithm):
 
 def generate_csr(openssl, pki, private_key, csr_filename, subject, conf, commonName, subjectAltName, cn_type):
     env = os.environ
-    if pki == 'pki-44':
-        openssl_cmd = f'OPENSSL_CONF={shlex.quote(OQS_CONF)} OPENSSL_MODULES={shlex.quote(OPENSSL_MODULES)} {openssl}'
-    else:
-        openssl_cmd = openssl
     if subjectAltName != "":  
         # server or client
         logging.info(f"SAN = {subjectAltName}")
@@ -65,7 +51,7 @@ def generate_csr(openssl, pki, private_key, csr_filename, subject, conf, commonN
             reqexts = "ip_ext"
     logging.info(reqexts)
     try:
-        cmd = f"{openssl_cmd} req -new -key {private_key} -out {csr_filename} -subj {subject} -config {conf} -reqexts {reqexts}"
+        cmd = f"{openssl} req -new -key {private_key} -out {csr_filename} -subj {subject} -config {conf} -reqexts {reqexts}"
         subprocess.check_output(cmd, shell=True, text=True).strip()
     except subprocess.CalledProcessError as e:
         logging.info(f"Error generating CSR: {e}")
@@ -76,13 +62,8 @@ def sign_certificate(openssl, pki, csr_file, crt_file, purpose, ca_key, ca_passf
         ext = 'server_ext'
     elif purpose == 'client':
         ext = 'client_ext'
-    if pki == 'pki-44':
-        openssl_cmd = f'OPENSSL_CONF={shlex.quote(OQS_CONF)} OPENSSL_MODULES={shlex.quote(OPENSSL_MODULES)} {openssl}'
-        
-    else:
-        openssl_cmd = openssl
     try:
-        cmd = f"{openssl_cmd} ca -config {ca_conf} -keyfile {ca_key} -passin file:{ca_passfile} -cert {ca_cert} -in {csr_file} -out {crt_file} -extensions {ext} -days 365 -batch"
+        cmd = f"{openssl} ca -config {ca_conf} -keyfile {ca_key} -passin file:{ca_passfile} -cert {ca_cert} -in {csr_file} -out {crt_file} -extensions {ext} -days 365 -batch"
         subprocess.check_output(cmd, shell=True, text=True).strip()
         if os.path.isfile(crt_file):
             logging.info(f"Successfully created end entity certificate: {crt_file}")
@@ -94,14 +75,9 @@ def sign_certificate(openssl, pki, csr_file, crt_file, purpose, ca_key, ca_passf
         sys.exit(1)
 
 def convert_certificate_to_der(openssl, pki, crt_file):
-    if pki == 'pki-44':
-        openssl_cmd = f'OPENSSL_CONF={shlex.quote(OQS_CONF)} OPENSSL_MODULES={shlex.quote(OPENSSL_MODULES)} {openssl}'
-        
-    else:
-        openssl_cmd = openssl
     try:
         der_file = f"{crt_file}.der"
-        cmd = f"{openssl_cmd} x509 -in {crt_file} -out {der_file} -outform DER"
+        cmd = f"{openssl} x509 -in {crt_file} -out {der_file} -outform DER"
         subprocess.check_output(cmd, shell=True, text=True).strip()
     except subprocess.CalledProcessError as e:
         logging.error(f"Error converting certificate to DER format: {e}")
