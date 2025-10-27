@@ -12,18 +12,18 @@ The features of the CAs are explained below:
 - **Validity Period**: 20 years (root CA), 10 years (intermediate CAs).
 - **Revocation**: Only revoked if compromised.
 
-### 2.1 IB: QUBIP TLS chain
+### 2.1 IB: QUBIP TLS chain (Aurora provider)
 This chain is used within the IB pilot to set up a TLS connection in Firefox. It consists of a Root CA and an intermediate CA:
-- The root CA is self-signed with SLH-DSA-SHAKE-192f key
+- The root CA is self-signed with SLH-DSA-SHAKE-256s key
 - The intermediate TLS CA has a MLDSA65 keypair and its certificate is signed with the root CA's key
 
 
- ### 2.2 DM: QUBIP MPU chain
+ ### 2.2 DM: QUBIP MPU chain (OQS provider)
 This chain is used within the DM pilot for MPU IoT devices that connect to the MQTT broker. It consists of a Root CA and an intermediate CA:
 - The root CA is self-signed with MLDSA65/ED25519 composite key
 - The intermediate TLS CA has a MLDSA65/ED25519 composite keypair and its certificate is signed with the root CA's key
 
- ### 2.3 DM: QUBIP MCU chain
+ ### 2.3 DM: QUBIP MCU chain (OQS provider)
 This chain is used within the DM pilot for MCU IoT devices that connect to the MQTT broker. It consists of a Root CA and an intermediate CA:
 - The root CA is self-signed with MLDSA44/ED25519 composite key
 - The intermediate TLS CA has a MLDSA44/ED25519 composite keypair and its certificate is signed with the root CA's key
@@ -71,3 +71,7 @@ This chain is used within the DM pilot for MCU IoT devices that connect to the M
 
 ## 9. Security Considerations
 Private keys are immediately deleted from the server after the user has downloaded them. Thus, once generated, the certificate material cannot be downloaded anymore. 
+
+
+## 10. TODO
+Migrate all the chains to a single root CA using Aurora provider v0.9.0
