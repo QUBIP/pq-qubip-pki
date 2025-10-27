@@ -30,6 +30,8 @@ Config.validate()
 
 openssl = app.config["OPENSSL"]
 OQS_CONF = "/opt/pki-file/oqs.cnf"
+OQS_PKI = "/opt/pki-file/oqs_pki"
+AURORA_PKI = "/opt/pki-file/aurora0.9.0_pki"
 
 
 # -----------------------------------------------------------------------------
@@ -94,7 +96,9 @@ def device_ctx(device: str, purpose: str):
         ca_name = "qubip-mpu-ca"
         base = app.config["PKI65_DIR"]
         conf_dir = app.config["CONF_DIR_PKI65"]
+        print(conf_dir)
         conf_file = os.path.join(conf_dir, "qubip-server.conf" if purpose == "server" else "qubip-client.conf")
+        print(conf_file)
         return {
             "pki": pki,
             "ca": app.config["MPU_CA"],
@@ -141,11 +145,11 @@ def device_ctx(device: str, purpose: str):
 
 def chain_base_dir(chain: str) -> str:
     if chain == "certs":
-        return app.config["CERTS_DIR"]
+        return AURORA_PKI + "/certs"
     if chain == "pki-65":
-        return app.config["PKI65_DIR"]
+        return OQS_PKI + "/pki-65"
     if chain == "pki-44":
-        return app.config["PKI44_DIR"]
+        return OQS_PKI + "/pki-44"
     abort(400, "Invalid chain")
 
 def ca_cert_path(chain: str, ca: str) -> str:
@@ -157,7 +161,7 @@ def ca_cert_path(chain: str, ca: str) -> str:
     if ca == "qubip-mcu-ca":
         return os.path.join(base, app.config["MCU_CA"], "qubip-mcu-ca-cert.pem")
     if ca == "qubip-tls-ca":
-        return app.config["TLS_CA_CERT"]
+        return os.path.join(base, app.config["TLS_CA"], "qubip-tls-ca-cert.pem")
     abort(404, "CA not found")
 
 def ca_crl_path(chain: str, ca: str) -> str:
@@ -169,7 +173,7 @@ def ca_crl_path(chain: str, ca: str) -> str:
     if ca == "qubip-mcu-ca":
         return os.path.join(base, app.config["MCU_CA"], "crl", "qubip-mcu-ca.crl")
     if ca == "qubip-tls-ca":
-        return app.config["TLS_CA_CRL"]
+        return os.path.join(base, app.config["TLS_CA"], "crl", "qubip-tls-ca.crl")
     abort(404, "CA not found")
 
 def issued_certs_dir_for(pki: str, ca: str) -> str:
@@ -394,10 +398,11 @@ def download_crl(chain, ca):
 @app.route('/certificate_details/<chain>/<ca>/ca_certificate', methods=['GET'])
 def view_ca_certificate(chain, ca):
     filename = ca_cert_path(chain, ca)
+    logging.info(f"CA Certificate Path: {filename}")
     _abort_if_missing(filename, "Certificate not found")
 
     try:
-        cert_data = get_ca_certificate_details(openssl, filename)
+        cert_data = get_ca_certificate_details(openssl, filename, chain)
         return render_template("view-ca-certificate.html", cert_data=cert_data, ca=ca)
     except Exception as e:
         logging.error(f"Error reading certificate: {e}")
@@ -408,7 +413,7 @@ def view_ca_crl(chain, ca):
     filename = ca_crl_path(chain, ca)
     _abort_if_missing(filename, "CRL not found")
     try:
-        crl_data = get_crl_details(openssl, filename)
+        crl_data = get_crl_details(openssl, filename, chain)
         return render_template("view-ca-crl.html", crl_data=crl_data, ca=ca)
     except Exception as e:
         logging.error(f"Error reading CRL: {e}")
