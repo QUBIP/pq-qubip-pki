@@ -150,7 +150,10 @@ def chain_base_dir(chain: str) -> str:
         return OQS_PKI + "/pki-65"
     if chain == "pki-44":
         return OQS_PKI + "/pki-44"
-    abort(400, "Invalid chain")
+    if chain == "classical-pki":
+        return "/opt/pki-file/classical_certs/classical_pki_out"
+    
+    abort(400, "Invalid chain (chain_base_dir)")
 
 def ca_cert_path(chain: str, ca: str) -> str:
     base = chain_base_dir(chain)
@@ -162,6 +165,26 @@ def ca_cert_path(chain: str, ca: str) -> str:
         return os.path.join(base, app.config["MCU_CA"], "qubip-mcu-ca-cert.pem")
     if ca == "qubip-tls-ca":
         return os.path.join(base, app.config["TLS_CA"], "qubip-tls-ca-cert.pem")
+    if ca == "qubip-root-ca-rsa2048":
+        return os.path.join(base, "rsa2048", "qubip-root-ca-rsa2048-cert.der")
+    if ca == "qubip-root-ca-rsarsa3072":
+        return os.path.join(base, "rsarsa3072", "qubip-root-ca-rsarsa3072-cert.der")
+    if ca == "qubip-root-ca-rsa4096":
+        return os.path.join(base, "rsa4096", "qubip-root-ca-rsa4096-cert.der")
+    if ca == "qubip-root-ca-ecdsa":
+        return os.path.join(base, "ecdsa", "qubip-root-ca-ecdsa-cert.der")
+    if ca == "qubip-root-ca-ed25519":
+        return os.path.join(base, "ed25519", "qubip-root-ca-ed25519-cert.der")
+    if ca == "qubip-mcu-ca-rsa2048":
+        return os.path.join(base, "rsa2048", "qubip-mcu-ca-rsa2048-cert.der")
+    if ca == "qubip-mcu-ca-rsa3072":
+        return os.path.join(base, "rsa3072", "qubip-mcu-ca-rsa3072-cert.der")
+    if ca == "qubip-mcu-ca-rsa4096":
+        return os.path.join(base, "rsa4096", "qubip-mcu-ca-rsa4096-cert.der")
+    if ca == "qubip-mcu-ca-ecdsa":
+        return os.path.join(base, "ecdsa", "qubip-mcu-ca-ecdsa-cert.der")
+    if ca == "qubip-mcu-ca-ed25519":
+        return os.path.join(base, "ed25519", "qubip-mcu-ca-ed25519-cert.der")
     abort(404, "CA not found")
 
 def ca_crl_path(chain: str, ca: str) -> str:
@@ -173,7 +196,27 @@ def ca_crl_path(chain: str, ca: str) -> str:
     if ca == "qubip-mcu-ca":
         return os.path.join(base, app.config["MCU_CA"], "crl", "qubip-mcu-ca.crl")
     if ca == "qubip-tls-ca":
-        return os.path.join(base, app.config["TLS_CA"], "crl", "qubip-tls-ca.crl")
+        return os.path.join(base, app.config["TLS_CA"], "crl", "qubip-tls-ca.crl.der")
+    if ca == "qubip-root-ca-rsa2048":
+        return os.path.join(base, "rsa2048", "qubip-root-ca-rsa2048.crl")
+    if ca == "qubip-root-ca-rsarsa3072":
+        return os.path.join(base, "rsarsa3072", "qubip-root-ca-rsarsa3072.crl")
+    if ca == "qubip-root-ca-rsa4096":
+        return os.path.join(base, "rsa4096", "qubip-root-ca-rsa4096.crl")
+    if ca == "qubip-root-ca-ecdsa":
+        return os.path.join(base, "ecdsa", "qubip-root-ca-ecdsa.crl")
+    if ca == "qubip-root-ca-ed25519":
+        return os.path.join(base, "ed25519", "qubip-root-ca-ed25519.crl")
+    if ca == "qubip-mcu-ca-rsa2048":
+        return os.path.join(base, "rsa2048", "qubip-mcu-ca-rsa2048.crl")
+    if ca == "qubip-mcu-ca-rsa3072":
+        return os.path.join(base, "rsa3072", "qubip-mcu-ca-rsa3072.crl")
+    if ca == "qubip-mcu-ca-rsa4096":
+        return os.path.join(base, "rsa4096", "qubip-mcu-ca-rsa4096.crl")
+    if ca == "qubip-mcu-ca-ecdsa":
+        return os.path.join(base, "ecdsa", "qubip-mcu-ca-ecdsa.crl")
+    if ca == "qubip-mcu-ca-ed25519":
+        return os.path.join(base, "ed25519", "qubip-mcu-ca-ed25519.crl")
     abort(404, "CA not found")
 
 def issued_certs_dir_for(pki: str, ca: str) -> str:
