@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", function () {
     let certificateDownloaded = false;
     let latestCertInfo = null;
     const certForm = document.getElementById("certForm");
-    const chain = certForm.getAttribute("data-chain");
     const purpose = certForm.getAttribute("data-purpose");
 
     // Actions after certificate generation
@@ -19,10 +18,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const ipInputs = document.querySelectorAll(".ip-input");
     const fqdnErrors = document.querySelectorAll(".fqdn-error");
     const ipErrors = document.querySelectorAll(".ip-error");
-    const mpuCheckbox = document.getElementById("mpuCheckbox");
-    const mcuCheckbox = document.getElementById("mcuCheckbox");
-    const iotCheckboxError = document.getElementById("iotCheckboxError");
-    const tlsCheckbox = document.getElementById("tlsCheckbox");
 
     const successMessage = document.createElement("p");
     successMessage.id = "success-message";
@@ -71,10 +66,6 @@ document.addEventListener("DOMContentLoaded", function () {
             input.style.display = "none";
             input.value = "";
         });
-        mpuCheckbox.checked = false;
-        mcuCheckbox.checked = false;
-        tlsCheckbox.checked = false;
-        iotCheckboxError.textContent = "";
     }
 
     resetCheckboxes();
@@ -117,28 +108,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    mpuCheckbox.addEventListener("change", function () {
-        if (this.checked) {
-            mcuCheckbox.checked = false;
-            tlsCheckbox.checked = false;
-        }
-    });
-
-    mcuCheckbox.addEventListener("change", function () {
-        if (this.checked) {
-            mpuCheckbox.checked = false;
-            tlsCheckbox.checked = false;
-        }
-    });
-
-    tlsCheckbox.addEventListener("change", function () {
-        if (this.checked) {
-            mpuCheckbox.checked = false;
-            mcuCheckbox.checked = false;
-            iotCheckboxError.textContent = "";
-        }
-    });
-
     fqdnCheckboxes.forEach(checkbox => checkbox.addEventListener("change", updateInputVisibility));
     ipCheckboxes.forEach(checkbox => checkbox.addEventListener("change", updateInputVisibility));
 
@@ -146,7 +115,6 @@ document.addEventListener("DOMContentLoaded", function () {
         let isValid = true;
         let cnType = null;
         let commonName = null;
-        let device = null;
 
         const ipPattern = /^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$/;
         const fqdnPattern = /^(?!:\/\/)([a-zA-Z0-9-_]{1,63}\.)+[a-zA-Z]{2,6}$/;
@@ -190,17 +158,7 @@ document.addEventListener("DOMContentLoaded", function () {
             isValid = false;
         }
 
-        if (!mpuCheckbox.checked && !mcuCheckbox.checked && !tlsCheckbox.checked) {
-            iotCheckboxError.textContent = "Please select the purpose.";
-            isValid = false;
-        } else {
-            iotCheckboxError.textContent = "";
-            if (mpuCheckbox.checked) device = "mpu";
-            else if (mcuCheckbox.checked) device = "mcu";
-            else if (tlsCheckbox.checked) device = "tls";
-        }
-
-        return { isValid, cnType, commonName, device };
+        return { isValid, cnType, commonName };
     }
 
     const form = document.getElementById("certForm");
@@ -219,22 +177,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
         commonName = validation.commonName;
         cnType = validation.cnType;
-        device = validation.device;
         const data = {
             common_name: commonName,
             algorithm: algorithm,
             purpose: purpose,
             cn_type: cnType,
-            device: device
         };
-        fetch(`/generate_certificate/${purpose}`, {
+        fetch(`/v2/generate_certificate/${purpose}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         }).then(response => response.json())
             .then(data => {
                 //hideLoader();
-                window.location.assign(`/certificate/${data.pki}/${data.ca}/${data.certificate_id}`);
+                window.location.assign(`/v2/certificate/${data.ca}/${data.certificate_id}`);
             })
             .catch(error => {
                 hideLoader();
