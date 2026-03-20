@@ -9,76 +9,23 @@
 </head>
 
 <body>
-
-
     <div class="container">
         <h1>Welcome to QUBIP PKI!</h1>
-        <p>This interface allows you to receive x509 post-quantum certificates issued by the QUBIP PKI. You can generate
-            a post-quantum certificate and view the CA certificates and CRLs of the PKI.</p>
-        <!-- ==== Issue Certificate FROM CSR ==== -->
+        <p>
+            This interface allows you to receive x509 post-quantum certificates issued by the QUBIP PKI.
+            You can view the CA certificates and CRLs of the PKI, and authorized users can generate new certificates.
+        </p>
+
         <section class="section">
-            <h2 class="section-title">Certificate with CSR</h2>
+            <h2 class="section-title">Restricted Certificate Issuance</h2>
             <p class="section-subtitle">
-                Upload a CSR (PEM or DER). The CA will copy Subject/SAN from your CSR and issue a leaf certificate.
+                Certificate generation is restricted to authorized users only.
             </p>
-
-            <form id="csr-form" class="card form" action="{{ url_for('issue_from_csr') }}" method="POST"
-                enctype="multipart/form-data">
-
-                {# If you use CSRF protection, include your token here #}
-                {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
-
-                <div class="form-grid">
-                    <div class="form-row">
-                        <label for="purpose">Purpose</label>
-                        <select id="purpose" name="purpose" required>
-                            <option value="server">Server</option>
-                            <option value="client">Client</option>
-                        </select>
-                    </div>
-
-                    <div class="form-row form-row-full">
-                        <label for="csr">CSR file </label>
-                        <input id="csr" name="csr" type="file" accept=".csr,.pem" required>
-                        <p class="hint">Accepted: PEM (.csr, .pem). DER is OK—backend will detect and
-                            convert.
-                            <span class="important">IMPORTANT: your CSR MUST be created with the latest aurora version
-                                (0.10.0)</span>
-                        </p>
-                    </div>
-
-                    <div class="form-row">
-                        <label for="out_format">Output format</label>
-                        <select id="out_format" name="out_format">
-                            <option value="pem" selected>PEM</option>
-                            <option value="der">DER</option>
-                        </select>
-                    </div>
-
-                    <div class="form-row align-end">
-                        <label class="checkbox">
-                            <input type="checkbox" name="include_chain" id="include_chain" checked>
-                            Include issuing chain (bundle)
-                        </label>
-                    </div>
-                </div>
-                <div class="button-container">
-                    <button type="submit" class="button purpose" id="csr-submit">Issue certificate</button>
-                </div>
-
-                <div id="csr-msg" class="msg" aria-live="polite"></div>
-            </form>
+            <div class="button-container">
+                <a href="{{ url_for('issue_dashboard') }}" class="button purpose">Generate certificate</a>
+            </div>
         </section>
-        <!-- ==== /Issue Certificate FROM CSR ==== -->
 
-
-
-        <h2>Generate Private Key and certificate</h2>
-        <p>Please select the purpose of the certificate you want</p>
-        <div class="button-container">
-            <a href="{{ url_for('generate_certificate', purpose='server') }}" class="button purpose">Server</a>
-            <a href="{{ url_for('generate_certificate', purpose='client') }}" class="button purpose">Client</a>
-        </div>
         <h2>PKI Chains</h2>
         <p>Here you can retrieve the information about the Certificate Authorities and Certificate Revocation Lists</p>
 
@@ -86,25 +33,23 @@
             <div class="pyramid-top">
                 <div class="ca-section root-ca">
                     <h2>Root CA</h2>
-                    <p>The Root CA is the root of trust for PKI. It is used to sign the intermediate CAs and is not
-                        intended
-                        to be used for end-entity certificates.</p>
+                    <p>
+                        The Root CA is the root of trust for PKI. It is used to sign the intermediate CAs and is not
+                        intended to be used for end-entity certificates.
+                    </p>
                     <hr>
                     <strong>Download</strong>
                     <hr>
                     <div class="button-container">
-                        <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-root-ca">Download
-                            certificate</a>
+                        <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-root-ca">Download certificate</a>
                         <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-root-ca">Download CRL</a>
                     </div>
                     <hr>
                     <strong>View</strong>
                     <hr>
                     <div class="button-container">
-                        <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-root-ca">View
-                            certificate</a>
-                        <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-root-ca') }}">View
-                            CRL</a>
+                        <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-root-ca">View certificate</a>
+                        <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-root-ca') }}">View CRL</a>
                     </div>
                 </div>
             </div>
@@ -122,19 +67,15 @@
                     <strong>Download</strong>
                     <hr>
                     <div class="button-container">
-                        <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-ca-server">Download
-                            certificate</a>
-                        <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-ca-server">Download
-                            CRL</a>
+                        <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-ca-server">Download certificate</a>
+                        <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-ca-server">Download CRL</a>
                     </div>
                     <hr>
                     <strong>View</strong>
                     <hr>
                     <div class="button-container">
-                        <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-ca-server">View
-                            certificate</a>
-                        <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-ca-server') }}">View
-                            CRL</a>
+                        <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-ca-server">View certificate</a>
+                        <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-ca-server') }}">View CRL</a>
                     </div>
                 </div>
 
@@ -145,27 +86,22 @@
                     <strong>Download</strong>
                     <hr>
                     <div class="button-container">
-                        <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-ca-client">Download
-                            certificate</a>
-                        <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-ca-client">Download
-                            CRL</a>
+                        <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-ca-client">Download certificate</a>
+                        <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-ca-client">Download CRL</a>
                     </div>
                     <hr>
                     <strong>View</strong>
                     <hr>
                     <div class="button-container">
-                        <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-ca-client">View
-                            certificate</a>
-                        <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-ca-client') }}">View
-                            CRL</a>
+                        <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-ca-client">View certificate</a>
+                        <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-ca-client') }}">View CRL</a>
                     </div>
                 </div>
             </div>
         </div>
-        <div style="text-align:right; margin-bottom: 20px;">
-            <a href="{{ url_for('logout') }}" class="button">Logout</a>
-        </div>
-        <script src="/static/js-scripts/script-6.js"></script>
+    </div>
+
+    <script src="/static/js-scripts/script-6.js"></script>
 </body>
 
 </html>

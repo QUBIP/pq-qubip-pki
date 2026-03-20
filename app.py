@@ -1,4 +1,4 @@
-from flask import Flask, request, abort, render_template, jsonify, send_file, session, redirect, url_for
+from flask import Flask, request, abort, render_template, jsonify, send_file
 from functools import wraps
 import os
 import shutil
@@ -36,37 +36,6 @@ AURORA_PKI = app.config["AURORA_PKI_DIR"]
 # -----------------------------------------------------------------------------
 # Small utilities (no logic changes, just helpers)
 # -----------------------------------------------------------------------------
-
-def login_required(view):
-    @wraps(view)
-    def wrapped_view(*args, **kwargs):
-        if not session.get("authenticated"):
-            return redirect(url_for("login"))
-
-        if session.get("auth_version") != app.config.get("AUTH_VERSION"):
-            session.clear()
-            return redirect(url_for("login"))
-
-        return view(*args, **kwargs)
-    return wrapped_view
-
-
-@app.before_request
-def require_login_globally():
-    allowed_endpoints = {"login", "logout", "static"}
-
-    if request.endpoint is None:
-        return
-
-    if request.endpoint in allowed_endpoints:
-        return
-
-    if not session.get("authenticated"):
-        return redirect(url_for("login"))
-
-    if session.get("auth_version") != app.config.get("AUTH_VERSION"):
-        session.clear()
-        return redirect(url_for("login"))
     
 def _abort_if_missing(path: str, msg: str):
     if not os.path.exists(path):
@@ -415,31 +384,9 @@ def certificate_success(ca, certificate_id):
                            ca=ca, certificate_id=certificate_id,
                            cert_pem=cert_pem)
 
-
-# =========================== LOGIN ============================
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    error = None
-
-    if request.method == "POST":
-        password = request.form.get("password", "")
-
-        if password == app.config["LOGIN_PASSWORD"]:
-            session.clear()
-            session["authenticated"] = True
-            session["auth_version"] = app.config["AUTH_VERSION"]
-            return redirect(url_for("home"))
-        else:
-            error = "Invalid password"
-
-    return render_template("login.html", error=error)
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
+@app.route('/issue', methods=['GET'])
+def issue_dashboard():
+    return render_template('issue_dashboard.html')
 
 
 @app.route('/')
