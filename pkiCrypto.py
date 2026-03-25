@@ -12,7 +12,7 @@ import shlex
 classical_algorithms = ['rsa2048', 'rsa3072','rsa4096', 'ed25519']
 
 pq_algorithms = ['mldsa44', 'mldsa65', 'mldsa87', 'mldsa44_ed25519', 'mldsa65_ed25519']
-cas = ['qubip-root-ca', 'qubip-ca-client', 'qubip-ca-server']
+cas = ['qubip-root-ca-fb81895b', 'qubip-ca-client-fb81895b', 'qubip-ca-server-fb81895b']
 
 
 def generate_private_key(openssl, key_file, algorithm):
@@ -75,8 +75,10 @@ def convert_certificate_to_der(openssl, crt_file):
         der_file = f"{crt_file}.der"
         cmd = f"{openssl} x509 -in {crt_file} -out {der_file} -outform DER"
         subprocess.check_output(cmd, shell=True, text=True).strip()
+        return der_file
     except subprocess.CalledProcessError as e:
         logging.error(f"Error converting certificate to DER format: {e}")
+    
 
 def create_certificate_chain(cert_file, ca_chain, chain_file):
     try:

@@ -8,7 +8,6 @@ import logging
 from io import BytesIO
 from zipfile import ZipFile
 from werkzeug.utils import secure_filename
-
 from pkiCrypto import (
     generate_private_key,
     generate_csr,
@@ -51,7 +50,7 @@ def _safe_name(name: str, fallback: str) -> str:
 
 def chain_issue_paths(ca: str):
     """Paths needed by /issue_from_csr based on ca."""
-    if ca == "qubip-ca-client":
+    if ca == "qubip-ca-client-fb81895b":
         return {
             "ca_certs_dir": app.config["INTERMEDIATE_CA_CLIENT_CERTS_DIR"],
             "ca_conf":      app.config["INTERMEDIATE_CA_CLIENT_CONF"],
@@ -61,7 +60,7 @@ def chain_issue_paths(ca: str):
             "ca_chain":     app.config["INTERMEDIATE_CA_CLIENT_CHAIN"],
             "extensions":   "client_ext"
         }
-    if ca == "qubip-ca-server":
+    if ca == "qubip-ca-server-fb81895b":
         return {
             "ca_certs_dir": app.config["INTERMEDIATE_CA_SERVER_CERTS_DIR"],
             "ca_conf":      app.config["INTERMEDIATE_CA_SERVER_CONF"],
@@ -111,29 +110,29 @@ def chain_base_dir() -> str:
 
 def ca_cert_path(ca: str) -> str:
     base = chain_base_dir()
-    if ca == "qubip-root-ca":
+    if ca == "qubip-root-ca-fb81895b":
         return app.config['ROOT_CA_CERT']
-    if ca == "qubip-ca-client":
+    if ca == "qubip-ca-client-fb81895b":
         return app.config['INTERMEDIATE_CA_CLIENT_CERT']
-    if ca == "qubip-ca-server":
+    if ca == "qubip-ca-server-fb81895b":
         return app.config['INTERMEDIATE_CA_SERVER_CERT']
     abort(404, "CA not found")
 
 def ca_crl_path(ca: str) -> str:
     base = chain_base_dir()
-    if ca == "qubip-root-ca":
-        return app.config['ROOT_CA_CRL']
-    if ca == "qubip-ca-client":
-        return app.config['INTERMEDIATE_CA_CLIENT_CRL']
-    if ca == "qubip-ca-server":
-        return app.config['INTERMEDIATE_CA_SERVER_CRL']
+    if ca == "qubip-root-ca-fb81895b":
+        return app.config['ROOT_CA_CRL_DER']
+    if ca == "qubip-ca-client-fb81895b":
+        return app.config['INTERMEDIATE_CA_CLIENT_CRL_DER']
+    if ca == "qubip-ca-server-fb81895b":
+        return app.config['INTERMEDIATE_CA_SERVER_CRL_DER']
     abort(404, "CA not found")
 
 def issued_certs_dir_for(ca: str) -> str:
     base = chain_base_dir()
-    if ca == "qubip-ca-client":
+    if ca == "qubip-ca-client-fb81895b":
         return app.config['INTERMEDIATE_CA_CLIENT_CERTS_DIR']
-    if ca == "qubip-ca-server":
+    if ca == "qubip-ca-server-fb81895b":
         return app.config['INTERMEDIATE_CA_SERVER_CERTS_DIR']
     abort(404, "CA not found")
 
@@ -157,10 +156,10 @@ def issue_from_csr():
     if purpose not in {"server", "client"}:
         abort(400, "Invalid purpose")
     if purpose == "client":
-        ca = "qubip-ca-client"
+        ca = "qubip-ca-client-fb81895b"
     
     elif purpose == "server":
-        ca = "qubip-ca-server"
+        ca = "qubip-ca-server-fb81895b"
     paths = chain_issue_paths(ca)
     out_format = request.form.get("out_format", "pem").strip().lower()
     if out_format not in {"pem", "der"}:
@@ -178,25 +177,27 @@ def issue_from_csr():
         
 
         # 4) Issue certificate (always produce PEM first)
-        leaf_pem = os.path.join(workdir, f"{purpose}.pem")
+        leaf_id = f'{str(uuid.uuid4().hex[:10 ])}-{purpose}'
+        leaf_pem = os.path.join(workdir, f"{leaf_id}-cert.pem")
         sign_certificate(
             openssl, csr_path, leaf_pem,
             paths["ca_key_file"], paths["ca_passfile"], paths["ca_cert"], paths["ca_conf"], paths['extensions']
         )
         # 5) Optionally build bundle
         download_path = leaf_pem
-        download_name = f"leaf-{purpose}.pem"
+        download_name = f"{leaf_id}-cert.pem"
         if include_chain:
             bundle_pem = os.path.join(workdir, "bundle.pem")
-            create_certificate_chain(leaf_pem, paths['ca_chain'], bundle_pem)
+            der_file = create_certificate_chain(leaf_pem, paths['ca_chain'], bundle_pem)
             download_path = bundle_pem
-            download_name = f"leaf_bundle-{purpose}.pem"
+            download_name = f"{leaf_id}-chain.pem"
 
         # 6) Convert to DER if requested
         if out_format == "der":
-            der_path = os.path.join(workdir, "leaf.der")
+            # der_path = os.path.join(workdir, "leaf.der")
             # If bundle was requested with DER, you likely still return leaf.der (bundling DER is uncommon).
-            convert_certificate_to_der(openssl, ca, leaf_pem)
+            der_path = convert_certificate_to_der(openssl, leaf_pem)
+            print(der_path)
             download_path = der_path
             download_name = download_name.replace(".pem", ".der")
 
@@ -258,8 +259,8 @@ def generate_certificate(purpose):
                 else:
                     chain_file = f'{cert_id}-chain.pem'
                     chain_path = os.path.join(ctx['ca_certs_dir'], chain_file)
-                    convert_certificate_to_der(openssl, cert_file)
-                    create_certificate_chain(cert_file, ctx['ca_chain'], chain_path)
+                    der_file = convert_certificate_to_der(openssl, cert_file)
+                    der_ca_file = create_certificate_chain(cert_file, ctx['ca_chain'], chain_path)
                     convert_certificate_to_der(openssl, chain_path)
                     
                     return jsonify({
@@ -279,9 +280,9 @@ def download_certificate(cert_id):
     purpose = cert_id.split("-")[1]
     ca = ""
     if purpose == "client":
-        ca = "qubip-ca-client"
+        ca = "qubip-ca-client-fb81895b"
     else:
-        ca = "qubip-ca-server"
+        ca = "qubip-ca-server-fb81895b"
     certs_path = issued_certs_dir_for(ca)
     filename        = f"{cert_id}-cert.pem"
     chain_filename  = f"{cert_id}-chain.pem"
