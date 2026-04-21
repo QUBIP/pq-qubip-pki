@@ -78,7 +78,6 @@
                         <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-ca-server-fb81895b') }}">View CRL</a>
                     </div>
                 </div>
-
                 <div class="ca-section intermediate-ca">
                     <h2>Client intermediate CA</h2>
                     <p>The QUBIP Client CA is used to sign end-entity certificates for clients.</p>
@@ -95,6 +94,44 @@
                     <div class="button-container">
                         <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-ca-client-fb81895b">View certificate</a>
                         <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-ca-client-fb81895b') }}">View CRL</a>
+                    </div>
+                </div>
+                <div class="ca-section intermediate-ca">
+                    <h2>MCU Server intermediate CA</h2>
+                    <p>Same as the QUBIP Server CA, but tailored for MCU applications.</p>
+                    <hr>
+                    <strong>Download</strong>
+                    <hr>
+                    <div class="button-container">
+                        <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-ca-server-mcu-fb81895b">Download certificate</a>
+                        <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-ca-server-mcu-fb81895b">Download CRL</a>
+                    </div>
+                    <hr>
+                    <strong>View</strong>
+                    <hr>
+                    <div class="button-container">
+                        <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-ca-server-mcu-fb81895b">View certificate</a>
+                        <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-ca-server-mcu-fb81895b') }}">View CRL</a>
+                    </div>
+                </div>
+
+                
+                <div class="ca-section intermediate-ca">
+                    <h2>MCU Client intermediate CA</h2>
+                    <p>Same as the QUBIP Client CA, but tailored for MCU applications.</p>
+                    <hr>
+                    <strong>Download</strong>
+                    <hr>
+                    <div class="button-container">
+                        <a href="#" class="button cert-button download-ca-cert-btn" cert-name="qubip-ca-client-mcu-fb81895b">Download certificate</a>
+                        <a href="#" class="button crl-button download-crl-btn" crl-name="qubip-ca-client-mcu-fb81895b">Download CRL</a>
+                    </div>
+                    <hr>
+                    <strong>View</strong>
+                    <hr>
+                    <div class="button-container">
+                        <a href="#" class="button cert-button view-ca-cert-btn" cert-name="qubip-ca-client-mcu-fb81895b">View certificate</a>
+                        <a class="button crl-button" href="{{ url_for('view_ca_crl', ca='qubip-ca-client-mcu-fb81895b') }}">View CRL</a>
                     </div>
                 </div>
             </div>

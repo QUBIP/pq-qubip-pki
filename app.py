@@ -18,7 +18,6 @@ from pkiCrypto import (
     convert_certificate_to_der,
 )
 from config import Config
-
 # -----------------------------------------------------------------------------
 # App & config
 # -----------------------------------------------------------------------------
@@ -70,39 +69,88 @@ def chain_issue_paths(ca: str):
             "ca_chain":     app.config["INTERMEDIATE_CA_SERVER_CHAIN"],
             "extensions":   "server_ext"
         }
+    if ca == "qubip-ca-server-mcu-fb81895b":
+        return {
+            "ca_certs_dir": app.config["INTERMEDIATE_CA_SERVER_MCU_CERTS_DIR"],
+            "ca_conf":      app.config["INTERMEDIATE_CA_SERVER_MCU_CONF"],
+            "ca_key_file":  app.config["INTERMEDIATE_CA_SERVER_MCU_KEY"],
+            "ca_passfile":  app.config["INTERMEDIATE_CA_SERVER_MCU_PASSWORD"],
+            "ca_cert":      app.config["INTERMEDIATE_CA_SERVER_MCU_CERT"],
+            "ca_chain":     app.config["INTERMEDIATE_CA_SERVER_MCU_CHAIN"],
+            "extensions":   "server_ext"
+        }
+    if ca == "qubip-ca-client-mcu-fb81895b":
+        return {
+            "ca_certs_dir": app.config["INTERMEDIATE_CA_CLIENT_MCU_CERTS_DIR"],
+            "ca_conf":      app.config["INTERMEDIATE_CA_CLIENT_MCU_CONF"],
+            "ca_key_file":  app.config["INTERMEDIATE_CA_CLIENT_MCU_KEY"],
+            "ca_passfile":  app.config["INTERMEDIATE_CA_CLIENT_MCU_PASSWORD"],
+            "ca_cert":      app.config["INTERMEDIATE_CA_CLIENT_MCU_CERT"],
+            "ca_chain":     app.config["INTERMEDIATE_CA_CLIENT_MCU_CHAIN"],
+            "extensions":   "client_ext"
+        }
     abort(400, "Invalid chain")
 
-def cert_ctx(purpose: str):
+def cert_ctx(purpose: str, chain: str = "default") -> dict:
     """
     Paths & config needed by /generate_certificate based on device + purpose.
     (Same logic; just centralized.)
     """
-    if purpose == "client":
-        conf_file = app.config["CLIENT_CONF"]
-        return {
-            "ca": app.config["INTERMEDIATE_CA_CLIENT"],
-            "ca_certs_dir": app.config["INTERMEDIATE_CA_CLIENT_CERTS_DIR"],
-            "ca_conf":      app.config["INTERMEDIATE_CA_CLIENT_CONF"],
-            "ca_key_file":  app.config["INTERMEDIATE_CA_CLIENT_KEY"],
-            "ca_passfile":  app.config["INTERMEDIATE_CA_CLIENT_PASSWORD"],
-            "ca_cert":       app.config["INTERMEDIATE_CA_CLIENT_CERT"],
-            "ca_chain":      app.config["INTERMEDIATE_CA_CLIENT_CHAIN"],
-            "conf_file":    conf_file,
-            "extensions":   "client_ext"
-        }
-    if purpose == "server":
-        conf_file = app.config["SERVER_CONF"]
-        return {
-            "ca": app.config["INTERMEDIATE_CA_SERVER"],
-            "ca_certs_dir": app.config["INTERMEDIATE_CA_SERVER_CERTS_DIR"],
-            "ca_conf":      app.config["INTERMEDIATE_CA_SERVER_CONF"],
-            "ca_key_file":  app.config["INTERMEDIATE_CA_SERVER_KEY"],
-            "ca_passfile":  app.config["INTERMEDIATE_CA_SERVER_PASSWORD"],
-            "ca_cert":       app.config["INTERMEDIATE_CA_SERVER_CERT"],
-            "ca_chain":      app.config["INTERMEDIATE_CA_SERVER_CHAIN"],
-            "conf_file":    conf_file,
-            "extensions":   "server_ext"
-        }
+    if chain == "default":
+        if purpose == "client":
+            conf_file = app.config["CLIENT_CONF"]
+            return {
+                "ca": app.config["INTERMEDIATE_CA_CLIENT"],
+                "ca_certs_dir": app.config["INTERMEDIATE_CA_CLIENT_CERTS_DIR"],
+                "ca_conf":      app.config["INTERMEDIATE_CA_CLIENT_CONF"],
+                "ca_key_file":  app.config["INTERMEDIATE_CA_CLIENT_KEY"],
+                "ca_passfile":  app.config["INTERMEDIATE_CA_CLIENT_PASSWORD"],
+                "ca_cert":       app.config["INTERMEDIATE_CA_CLIENT_CERT"],
+                "ca_chain":      app.config["INTERMEDIATE_CA_CLIENT_CHAIN"],
+                "conf_file":    conf_file,
+                "extensions":   "client_ext"
+            }
+        if purpose == "server":
+            conf_file = app.config["SERVER_CONF"]
+            return {
+                "ca": app.config["INTERMEDIATE_CA_SERVER"],
+                "ca_certs_dir": app.config["INTERMEDIATE_CA_SERVER_CERTS_DIR"],
+                "ca_conf":      app.config["INTERMEDIATE_CA_SERVER_CONF"],
+                "ca_key_file":  app.config["INTERMEDIATE_CA_SERVER_KEY"],
+                "ca_passfile":  app.config["INTERMEDIATE_CA_SERVER_PASSWORD"],
+                "ca_cert":       app.config["INTERMEDIATE_CA_SERVER_CERT"],
+                "ca_chain":      app.config["INTERMEDIATE_CA_SERVER_CHAIN"],
+                "conf_file":    conf_file,
+                "extensions":   "server_ext"
+            }
+    else:
+        # chain == mcu
+        if purpose == "client":
+            conf_file = app.config["CLIENT_CONF"]
+            return {
+                "ca": app.config["INTERMEDIATE_CA_CLIENT_MCU"],
+                "ca_certs_dir": app.config["INTERMEDIATE_CA_CLIENT_MCU_CERTS_DIR"],
+                "ca_conf":      app.config["INTERMEDIATE_CA_CLIENT_MCU_CONF"],
+                "ca_key_file":  app.config["INTERMEDIATE_CA_CLIENT_MCU_KEY"],
+                "ca_passfile":  app.config["INTERMEDIATE_CA_CLIENT_MCU_PASSWORD"],
+                "ca_cert":       app.config["INTERMEDIATE_CA_CLIENT_MCU_CERT"],
+                "ca_chain":      app.config["INTERMEDIATE_CA_CLIENT_MCU_CHAIN"],
+                "conf_file":    conf_file,
+                "extensions":   "client_ext"
+            }
+        if purpose == "server":
+            conf_file = app.config["SERVER_CONF"]
+            return {
+                "ca": app.config["INTERMEDIATE_CA_SERVER_MCU"],
+                "ca_certs_dir": app.config["INTERMEDIATE_CA_SERVER_MCU_CERTS_DIR"],
+                "ca_conf":      app.config["INTERMEDIATE_CA_SERVER_MCU_CONF"],
+                "ca_key_file":  app.config["INTERMEDIATE_CA_SERVER_MCU_KEY"],
+                "ca_passfile":  app.config["INTERMEDIATE_CA_SERVER_MCU_PASSWORD"],
+                "ca_cert":       app.config["INTERMEDIATE_CA_SERVER_MCU_CERT"],
+                "ca_chain":      app.config["INTERMEDIATE_CA_SERVER_MCU_CHAIN"],
+                "conf_file":    conf_file,
+                "extensions":   "server_ext"
+            }
     abort(400, f"Invalid purpose: {purpose}")
 
 def chain_base_dir() -> str:
@@ -116,6 +164,10 @@ def ca_cert_path(ca: str) -> str:
         return app.config['INTERMEDIATE_CA_CLIENT_CERT']
     if ca == "qubip-ca-server-fb81895b":
         return app.config['INTERMEDIATE_CA_SERVER_CERT']
+    if ca == "qubip-ca-client-mcu-fb81895b":
+        return app.config['INTERMEDIATE_CA_CLIENT_MCU_CERT']
+    if ca == "qubip-ca-server-mcu-fb81895b":
+        return app.config['INTERMEDIATE_CA_SERVER_MCU_CERT']
     abort(404, "CA not found")
 
 def ca_crl_path(ca: str) -> str:
@@ -126,6 +178,10 @@ def ca_crl_path(ca: str) -> str:
         return app.config['INTERMEDIATE_CA_CLIENT_CRL_DER']
     if ca == "qubip-ca-server-fb81895b":
         return app.config['INTERMEDIATE_CA_SERVER_CRL_DER']
+    if ca == "qubip-ca-client-mcu-fb81895b":
+        return app.config['INTERMEDIATE_CA_CLIENT_MCU_CRL_DER']
+    if ca == "qubip-ca-server-mcu-fb81895b":
+        return app.config['INTERMEDIATE_CA_SERVER_MCU_CRL_DER']
     abort(404, "CA not found")
 
 def issued_certs_dir_for(ca: str) -> str:
@@ -134,6 +190,10 @@ def issued_certs_dir_for(ca: str) -> str:
         return app.config['INTERMEDIATE_CA_CLIENT_CERTS_DIR']
     if ca == "qubip-ca-server-fb81895b":
         return app.config['INTERMEDIATE_CA_SERVER_CERTS_DIR']
+    if ca == "qubip-ca-client-mcu-fb81895b":
+        return app.config['INTERMEDIATE_CA_CLIENT_MCU_CERTS_DIR']
+    if ca == "qubip-ca-server-mcu-fb81895b":
+        return app.config['INTERMEDIATE_CA_SERVER_MCU_CERTS_DIR']
     abort(404, "CA not found")
 
 def load_cert_from_store(ca: str, certificate_id: str) -> str:
@@ -151,15 +211,22 @@ def load_cert_from_store(ca: str, certificate_id: str) -> str:
 @app.post('/v2/certs/issue_from_csr')
 def issue_from_csr():
     # read form fields
+    chain = request.form.get("chain", "default").strip().lower()
     purpose = request.form.get("purpose", "").strip()
     ca = ""
     if purpose not in {"server", "client"}:
         abort(400, "Invalid purpose")
     if purpose == "client":
-        ca = "qubip-ca-client-fb81895b"
+        if chain == "default":
+            ca = "qubip-ca-client-fb81895b"
+        else:            
+            ca = "qubip-ca-client-mcu-fb81895b"
     
     elif purpose == "server":
-        ca = "qubip-ca-server-fb81895b"
+        if chain == "default":
+            ca = "qubip-ca-server-fb81895b"
+        else:
+            ca = "qubip-ca-server-mcu-fb81895b"
     paths = chain_issue_paths(ca)
     out_format = request.form.get("out_format", "pem").strip().lower()
     if out_format not in {"pem", "der"}:
@@ -224,9 +291,10 @@ def generate_certificate(purpose):
     if request.method == 'POST':
         try:
             data = request.json or request.form
-            ctx = cert_ctx(purpose)
+            logging.info(f"Received certificate generation request: {data}")
+            chain = data.get('chain', 'default')  # default to "default" if not provided
+            ctx = cert_ctx(purpose, chain)
             algorithm = data.get('algorithm') 
-
             commonName = data.get('common_name')
             cn_type = data.get('cn_type') # IP/DNS
             cert_id = f'{str(uuid.uuid4().hex[:10 ])}-{purpose}' 
@@ -396,4 +464,6 @@ def home():
     return render_template('home.html')
 
 if __name__ == '__main__':
+    logging.info("Starting QUBIP PKI Flask app")
+    logging.info(Config.__dict__)
     app.run(host='130.192.1.31', debug=True, port=5000)

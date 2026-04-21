@@ -12,7 +12,7 @@ import shlex
 classical_algorithms = ['rsa2048', 'rsa3072','rsa4096', 'ed25519']
 
 pq_algorithms = ['mldsa44', 'mldsa65', 'mldsa87', 'mldsa44_ed25519', 'mldsa65_ed25519']
-cas = ['qubip-root-ca-fb81895b', 'qubip-ca-client-fb81895b', 'qubip-ca-server-fb81895b']
+cas = ['qubip-root-ca-fb81895b', 'qubip-ca-client-fb81895b', 'qubip-ca-server-fb81895b', 'qubip-ca-client-mcu-fb81895b', 'qubip-ca-server-mcu-fb81895b']
 
 
 def generate_private_key(openssl, key_file, algorithm):

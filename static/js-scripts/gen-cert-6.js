@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let latestCertInfo = null;
     const certForm = document.getElementById("certForm");
     const purpose = certForm.getAttribute("data-purpose");
+    const chain = certForm.getAttribute("chain");
 
     // Actions after certificate generation
     const certActions = document.getElementById("certificate-actions");
@@ -171,6 +172,7 @@ document.addEventListener("DOMContentLoaded", function () {
         showLoader();
         submitButton.disabled = true;
         const algorithm = document.getElementById('key_algorithm').value;
+        const chain = document.getElementById('chain').value;
         let commonName = null;
         let cnType = null;
 
@@ -182,6 +184,7 @@ document.addEventListener("DOMContentLoaded", function () {
             algorithm: algorithm,
             purpose: purpose,
             cn_type: cnType,
+            chain: chain
         };
         fetch(`/v2/generate_certificate/${purpose}`, {
             method: 'POST',
