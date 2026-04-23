@@ -27,7 +27,7 @@
         <div class="actions-row">
             <a class="button" id="download-cert-btn" data-ca="{{ ca }}"
                 data-cert-id="{{ certificate_id }}"
-                href="{{ url_for('download_certificate', cert_id=certificate_id) }}">
+                href="{{ url_for('download_certificate', ca=ca, cert_id=certificate_id) }}">
                 Download Key, Certificate and Chain
             </a>
         </div>
@@ -70,7 +70,7 @@
                 );
                 if (!ok) return;
 
-                const url = `/v2/download_certificate/${id}`; // uses dataset values
+                const url = `/v2/download_certificate/${ca}/${id}`; // uses dataset values
 
                 try {
                     const res = await fetch(url, { method: 'GET' });

@@ -327,6 +327,7 @@ def generate_certificate(purpose):
                 else:
                     chain_file = f'{cert_id}-chain.pem'
                     chain_path = os.path.join(ctx['ca_certs_dir'], chain_file)
+                    print(f"Generated certificate at {cert_file}, preparing chain at {chain_path}")
                     der_file = convert_certificate_to_der(openssl, cert_file)
                     der_ca_file = create_certificate_chain(cert_file, ctx['ca_chain'], chain_path)
                     convert_certificate_to_der(openssl, chain_path)
@@ -342,15 +343,10 @@ def generate_certificate(purpose):
             return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
     return jsonify({'error': 'Invalid request method'}), 400
 
-@app.route('/v2/download_certificate/<cert_id>', methods=['GET'])
+@app.route('/v2/download_certificate/<ca>/<cert_id>', methods=['GET'])
 
-def download_certificate(cert_id):
+def download_certificate(ca, cert_id):
     purpose = cert_id.split("-")[1]
-    ca = ""
-    if purpose == "client":
-        ca = "qubip-ca-client-fb81895b"
-    else:
-        ca = "qubip-ca-server-fb81895b"
     certs_path = issued_certs_dir_for(ca)
     filename        = f"{cert_id}-cert.pem"
     chain_filename  = f"{cert_id}-chain.pem"

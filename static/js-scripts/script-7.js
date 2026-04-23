@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", function () {
         button.addEventListener("click", function (event) {
             event.preventDefault();
             const certName = this.getAttribute("cert-name");
+            console.log(`Viewing CA certificate: ${certName}`);
             window.location.href = `/v2/certificate_details/${certName}/ca_certificate`;
         });
     });
