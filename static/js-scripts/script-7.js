@@ -4,10 +4,8 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".download-ca-cert-btn").forEach(button => {
         button.addEventListener("click", function (event) {
             event.preventDefault();
-            const chainName = this.getAttribute("chain-name");
             const certName = this.getAttribute("cert-name");
-            ////console.log(`Downloading certificate: ${certName}`);
-            window.location.href = `/${chainName}/${certName}/certificate`;
+            window.location.href = `/v2/certs/${certName}/certificate`;
         });
     });
 
@@ -15,11 +13,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".view-ca-cert-btn").forEach(button => {
         button.addEventListener("click", function (event) {
             event.preventDefault();
-            ////console.log("view ca cert button clicked");
-            const chainName = this.getAttribute("chain-name");
             const certName = this.getAttribute("cert-name");
-            ////console.log(`Viewing certificate: ${certName}`);
-            window.location.href = `/certificate_details/${chainName}/${certName}/ca_certificate`;
+            console.log(`Viewing CA certificate: ${certName}`);
+            window.location.href = `/v2/certificate_details/${certName}/ca_certificate`;
         });
     });
 
@@ -27,24 +23,16 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".download-crl-btn").forEach(button => {
         button.addEventListener("click", function (event) {
             event.preventDefault();
-            const chainName = this.getAttribute("chain-name");
             const crlName = this.getAttribute("crl-name");
-            console.log("chainName: " + chainName);
-            console.log("crlName: " + crlName);
-            console.log(`Downloading CRL: ${crlName}`);
-            console.log(`/${chainName}/${crlName}/crl`);
-            window.location.href = `/${chainName}/${crlName}/crl`;
+            window.location.href = `/v2/certs/${crlName}/crl`;
         });
     });
 
     // Handle "View CA CRL" buttons
     document.querySelectorAll(".view-crl-btn").forEach(button => {
         button.addEventListener("click", function () {
-            const chainName = this.getAttribute("chain-name");
-            //console.log(chainName)
             const crlName = this.getAttribute("crl-name");
-            ////console.log(`Viewing CRL: ${crlName}`);
-            window.location.href = `/crl_details/${chainName}/${crlName}`;
+            window.location.href = `/v2/crl_details/v2/${crlName}`;
         });
     });
 });

@@ -25,9 +25,9 @@
         <p>Your certificate has been generated. You can download the bundle now.</p>
 
         <div class="actions-row">
-            <a class="button" id="download-cert-btn" data-pki="{{ pki }}" data-ca="{{ ca }}"
+            <a class="button" id="download-cert-btn" data-ca="{{ ca }}"
                 data-cert-id="{{ certificate_id }}"
-                href="{{ url_for('download_certificate', pki=pki, ca=ca, cert_id=certificate_id) }}">
+                href="{{ url_for('download_certificate', ca=ca, cert_id=certificate_id) }}">
                 Download Key, Certificate and Chain
             </a>
         </div>
@@ -41,16 +41,15 @@
         document.addEventListener('DOMContentLoaded', () => {
             sessionStorage.removeItem('certgen:loader');
             const btn = document.getElementById('download-cert-btn');
-            const pki = btn.dataset.pki;
             const ca = btn.dataset.ca;
             const id = btn.dataset.certId; // maps to data-cert-id
 
             // Safety check: if something is still missing, fall back to link HREF.
-            if (!pki || !ca || !id) {
+            if (!ca || !id) {
                 console.error('Missing ids on button dataset; using href fallback.');
             }
 
-            const storageKey = `certdl:${pki}:${ca}:${id}`;
+            const storageKey = `certdl:${ca}:${id}`;
             if (sessionStorage.getItem(storageKey) === 'done') {
                 btn.textContent = 'Already downloaded';
                 btn.setAttribute('aria-disabled', 'true');
@@ -71,7 +70,7 @@
                 );
                 if (!ok) return;
 
-                const url = `/download_certificate/${pki}/${ca}/${id}`; // uses dataset values
+                const url = `/v2/download_certificate/${ca}/${id}`; // uses dataset values
 
                 try {
                     const res = await fetch(url, { method: 'GET' });

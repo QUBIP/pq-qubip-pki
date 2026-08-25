@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restricted Certificate Issuance</title>
+    <link rel="stylesheet" href="/static/css/home_style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Restricted Certificate Issuance</h1>
+        <p>Authorized users can issue certificates from CSR or generate new ones.</p>
+
+        <section class="section">
+            <h2 class="section-title">Certificate with CSR</h2>
+            <p class="section-subtitle">
+                Upload a CSR (PEM or DER). The CA will copy Subject/SAN from your CSR and issue a leaf certificate.
+            </p>
+
+            <form id="csr-form" class="card form" action="{{ url_for('issue_from_csr') }}" method="POST" enctype="multipart/form-data">
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label for="purpose">Purpose</label>
+                        <select id="purpose" name="purpose" required>
+                            <option value="server">Server</option>
+                            <option value="client">Client</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="chain">Chain</label>
+                        <select id="chain" name="chain" required>
+                            <option value="default">Default</option>
+                            <option value="mcu">MCU</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row form-row-full">
+                        <label for="csr">CSR file</label>
+                        <input id="csr" name="csr" type="file" accept=".csr,.pem" required>
+                        <p class="hint">
+                            Accepted: PEM (.csr, .pem). DER is OK—backend will detect and convert.
+                            <span class="important">IMPORTANT: your CSR MUST be created with the latest aurora version (0.10.0)</span>
+                        </p>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="out_format">Output format</label>
+                        <select id="out_format" name="out_format">
+                            <option value="pem" selected>PEM</option>
+                            <option value="der">DER</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row align-end">
+                        <label class="checkbox">
+                            <input type="checkbox" name="include_chain" id="include_chain" checked>
+                            Include issuing chain (bundle)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-container">
+                    <button type="submit" class="button purpose" id="csr-submit">Issue certificate</button>
+                </div>
+
+                <div id="csr-msg" class="msg" aria-live="polite"></div>
+            </form>
+        </section>
+
+        <h2>Generate Private Key and certificate</h2>
+        <p>Please select the purpose of the certificate you want</p>
+        <div class="button-container">
+            <a href="{{ url_for('generate_certificate', purpose='server') }}" class="button purpose">Server</a>
+            <a href="{{ url_for('generate_certificate', purpose='client') }}" class="button purpose">Client</a>
+        </div>
+    </div>
+
+    <script src="/static/js-scripts/script-7.js"></script>
+</body>
+</html>
